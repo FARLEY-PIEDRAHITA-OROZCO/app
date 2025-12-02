@@ -92,7 +92,7 @@ def process_league(
 def main(
     api_key: Optional[str] = None,
     limit_leagues: Optional[int] = None,
-    season: int = 2024,
+    season: int = 2023,
     specific_league_id: Optional[int] = None
 ) -> int:
     """Función principal del script.
@@ -100,7 +100,7 @@ def main(
     Args:
         api_key: API key de API-Futbol
         limit_leagues: Límite de ligas a procesar (para pruebas)
-        season: Temporada a procesar
+        season: Temporada a procesar (Free plan: 2021-2023)
         specific_league_id: ID específico de liga a procesar (opcional)
         
     Returns:
