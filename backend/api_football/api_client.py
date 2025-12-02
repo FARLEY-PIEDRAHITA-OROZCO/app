@@ -157,13 +157,13 @@ class APIFootballClient:
     def get_team_standings(
         self,
         league_id: int,
-        season: int = 2024
+        season: int = 2023
     ) -> Dict[int, int]:
         """Obtiene la posición de clasificación de los equipos en una liga.
         
         Args:
             league_id: ID de la liga
-            season: Temporada (año)
+            season: Temporada (año). Free plan: 2021-2023
             
         Returns:
             Diccionario {team_id: posición}
