@@ -89,7 +89,7 @@ def test_single_league():
         
         # Obtener fixtures
         print("\nObteniendo fixtures...")
-        fixtures = api_client.get_fixtures_by_league(140, 2024)
+        fixtures = api_client.get_fixtures_by_league(140, 2023)
         print(f"✓ Fixtures obtenidos: {len(fixtures)}")
         
         if not fixtures:
@@ -98,7 +98,7 @@ def test_single_league():
         
         # Obtener clasificación
         print("\nObteniendo clasificación...")
-        standings = api_client.get_team_standings(140, 2024)
+        standings = api_client.get_team_standings(140, 2023)
         print(f"✓ Equipos en clasificación: {len(standings)}")
         
         # Transformar primeros 5 fixtures
