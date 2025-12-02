@@ -225,8 +225,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--season',
         type=int,
-        default=2024,
-        help='Temporada a procesar (default: 2024)'
+        default=2023,
+        help='Temporada a procesar (Free plan: 2021-2023, default: 2023)'
     )
     
     parser.add_argument(
