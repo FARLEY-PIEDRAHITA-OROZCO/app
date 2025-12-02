@@ -15,7 +15,7 @@ def process_league(
     api_client: APIFootballClient,
     db_manager: DatabaseManager,
     league_info: dict,
-    season: int = 2024
+    season: int = 2023
 ) -> dict:
     """Procesa una liga específica: obtiene fixtures, transforma y guarda.
     
@@ -23,7 +23,7 @@ def process_league(
         api_client: Cliente de la API
         db_manager: Gestor de base de datos
         league_info: Información de la liga
-        season: Temporada a procesar
+        season: Temporada a procesar (Free plan: 2021-2023)
         
     Returns:
         Diccionario con estadísticas del procesamiento
