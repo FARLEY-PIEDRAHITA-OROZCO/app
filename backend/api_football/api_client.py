@@ -125,13 +125,13 @@ class APIFootballClient:
     def get_fixtures_by_league(
         self,
         league_id: int,
-        season: int = 2024
+        season: int = 2023
     ) -> List[Dict]:
         """Obtiene los partidos (fixtures) de una liga específica.
         
         Args:
             league_id: ID de la liga
-            season: Temporada (año)
+            season: Temporada (año). Free plan: 2021-2023
             
         Returns:
             Lista de partidos
