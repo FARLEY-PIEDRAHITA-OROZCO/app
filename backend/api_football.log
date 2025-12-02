@@ -9304,3 +9304,18 @@ Procesando liga 618/1207
 2025-12-02 00:29:01,613 - __main__ - WARNING - 
 
 Proceso interrumpido por el usuario
+2025-12-02 00:53:54,119 - api_football.api_client - INFO - Cliente API-Futbol inicializado correctamente
+2025-12-02 00:53:54,119 - api_football.api_client - INFO - Obteniendo todas las ligas...
+2025-12-02 00:53:54,887 - api_football.api_client - ERROR - Error en la API: {'requests': 'You have reached the request limit for the day, Go to https://dashboard.api-football.com to upgrade your plan.'}
+2025-12-02 00:53:54,890 - api_football.api_client - ERROR - No se pudieron obtener las ligas
+2025-12-02 00:53:54,891 - api_football.db_manager - INFO - DatabaseManager inicializado para BD: test_database
+2025-12-02 00:53:54,925 - api_football.db_manager - INFO - Conexión exitosa a MongoDB: test_database.football_matches
+2025-12-02 00:53:54,929 - api_football.db_manager - INFO - Índices creados correctamente
+2025-12-02 00:53:54,956 - api_football.db_manager - INFO - Conexión a MongoDB cerrada
+2025-12-02 00:53:54,960 - api_football.api_client - INFO - Cliente API-Futbol inicializado correctamente
+2025-12-02 00:53:54,960 - api_football.db_manager - INFO - DatabaseManager inicializado para BD: test_database
+2025-12-02 00:53:55,004 - api_football.db_manager - INFO - Conexión exitosa a MongoDB: test_database.football_matches
+2025-12-02 00:53:55,008 - api_football.db_manager - INFO - Índices creados correctamente
+2025-12-02 00:53:55,008 - api_football.api_client - INFO - Obteniendo todas las ligas...
+2025-12-02 00:53:55,643 - api_football.api_client - ERROR - Error en la API: {'requests': 'You have reached the request limit for the day, Go to https://dashboard.api-football.com to upgrade your plan.'}
+2025-12-02 00:53:55,646 - api_football.api_client - ERROR - No se pudieron obtener las ligas
