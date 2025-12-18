@@ -340,6 +340,12 @@ https://dashboard.api-football.com
 
 ---
 
+## 📚 Documentación Adicional
+
+- **[Motor de Pronósticos (Documentación Técnica)](/docs/MOTOR_PRONOSTICOS.md)** - Explicación detallada del algoritmo, fórmulas, umbrales y cómo mejorar el sistema
+
+---
+
 ## 📝 Versiones
 
 - **Sistema PLLA:** 3.0
