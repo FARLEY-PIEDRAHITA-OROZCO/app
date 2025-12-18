@@ -20,7 +20,10 @@ const Layout = () => {
         width: '250px',
         background: 'var(--bg-secondary)',
         borderRight: '1px solid var(--border)',
-        padding: '2rem 0'
+        padding: '2rem 0',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh'
       }}>
         <div style={{ padding: '0 1.5rem', marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)' }}>
@@ -31,7 +34,7 @@ const Layout = () => {
           </p>
         </div>
         
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }}>
           {/* Sección Principal */}
           <div style={{ padding: '0.5rem 1.5rem', fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '0.5rem' }}>
             Principal
@@ -78,12 +81,10 @@ const Layout = () => {
           </NavLink>
         </nav>
         
-        {/* Footer del sidebar */}
+        {/* Footer del sidebar - ahora usando margin-top: auto para empujarlo abajo */}
         <div style={{ 
-          position: 'absolute', 
-          bottom: '1.5rem', 
-          left: '1.5rem', 
-          right: '1.5rem',
+          margin: '1.5rem',
+          marginTop: 'auto',
           padding: '0.75rem',
           background: 'var(--bg-card)',
           borderRadius: '8px',
