@@ -314,6 +314,305 @@ async def get_logs():
     except Exception as e:
         return {"logs": [], "error": str(e)}
 
+
+# ============================================
+# ENDPOINTS DEL MOTOR DE PRONÓSTICOS PLLA 3.0
+# ============================================
+
+# Modelos Pydantic para los nuevos endpoints
+class PronosticoRequest(BaseModel):
+    """Request para generar un pronóstico."""
+    equipo_local: str = Field(..., description="Nombre del equipo local")
+    equipo_visitante: str = Field(..., description="Nombre del equipo visitante")
+    liga_id: str = Field(default="SPAIN_LA_LIGA", description="ID de la liga")
+    temporada: Optional[int] = Field(default=2023, description="Temporada")
+
+class ValidacionRequest(BaseModel):
+    """Request para validar un pronóstico."""
+    pronostico_id: str = Field(..., description="ID del pronóstico a validar")
+    gol_local_tc: int = Field(..., ge=0, description="Goles local tiempo completo")
+    gol_visita_tc: int = Field(..., ge=0, description="Goles visita tiempo completo")
+    gol_local_1mt: int = Field(default=0, ge=0, description="Goles local primer tiempo")
+    gol_visita_1mt: int = Field(default=0, ge=0, description="Goles visita primer tiempo")
+
+class ConstruirStatsRequest(BaseModel):
+    """Request para construir estadísticas."""
+    liga_id: str = Field(default="SPAIN_LA_LIGA", description="ID de la liga")
+    temporada: Optional[int] = Field(default=2023, description="Temporada")
+
+
+@api_router.post("/prediction/build-stats")
+async def build_statistics(request: ConstruirStatsRequest):
+    """
+    Construye/actualiza las estadísticas de todos los equipos.
+    
+    Este endpoint debe ejecutarse antes de generar pronósticos
+    para asegurar que las estadísticas estén actualizadas.
+    
+    **Proceso:**
+    1. Lee todos los partidos de la liga
+    2. Calcula estadísticas acumuladas por equipo
+    3. Guarda en la colección `team_statistics`
+    """
+    try:
+        equipos = await stats_builder.construir_estadisticas(
+            liga_id=request.liga_id,
+            temporada=request.temporada
+        )
+        
+        return {
+            "success": True,
+            "message": f"Estadísticas construidas para {len(equipos)} equipos",
+            "liga_id": request.liga_id,
+            "temporada": request.temporada,
+            "equipos": list(equipos.keys())
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logging.error(f"Error construyendo estadísticas: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/prediction/classification")
+async def get_classification(
+    liga_id: str = "SPAIN_LA_LIGA",
+    temporada: int = 2023,
+    tipo_tiempo: str = "completo"
+):
+    """
+    Obtiene la tabla de clasificación.
+    
+    **Parámetros:**
+    - `liga_id`: ID de la liga
+    - `temporada`: Año de la temporada
+    - `tipo_tiempo`: "completo", "primer_tiempo" o "segundo_tiempo"
+    
+    **Retorna:**
+    - Tabla de posiciones ordenada por puntos
+    """
+    try:
+        # Mapear tipo de tiempo
+        tiempo_map = {
+            "completo": TipoTiempo.COMPLETO,
+            "primer_tiempo": TipoTiempo.PRIMER_TIEMPO,
+            "segundo_tiempo": TipoTiempo.SEGUNDO_TIEMPO
+        }
+        tipo = tiempo_map.get(tipo_tiempo, TipoTiempo.COMPLETO)
+        
+        tabla = await classification_engine.generar_clasificacion(
+            liga_id=liga_id,
+            temporada=temporada,
+            tipo_tiempo=tipo
+        )
+        
+        return classification_engine.tabla_to_dict(tabla)
+    
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logging.error(f"Error obteniendo clasificación: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/prediction/generate")
+async def generate_prediction(request: PronosticoRequest):
+    """
+    Genera un pronóstico para un partido.
+    
+    **Proceso:**
+    1. Obtiene estadísticas de ambos equipos
+    2. Calcula probabilidades (L/E/V)
+    3. Aplica algoritmo de decisión
+    4. Genera doble oportunidad y ambos marcan
+    
+    **Retorna:**
+    - Pronóstico para tiempo completo, primer tiempo y segundo tiempo
+    """
+    try:
+        pronostico = await prediction_engine.generar_pronostico(
+            equipo_local=request.equipo_local,
+            equipo_visitante=request.equipo_visitante,
+            liga_id=request.liga_id,
+            temporada=request.temporada
+        )
+        
+        return {
+            "success": True,
+            "pronostico": pronostico.to_response_dict()
+        }
+    
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logging.error(f"Error generando pronóstico: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/prediction/team/{nombre}")
+async def get_team_stats(
+    nombre: str,
+    liga_id: str = "SPAIN_LA_LIGA",
+    temporada: int = 2023
+):
+    """
+    Obtiene las estadísticas de un equipo específico.
+    
+    **Retorna:**
+    - Estadísticas generales, como local y como visitante
+    - Para tiempo completo, primer tiempo y segundo tiempo
+    """
+    try:
+        equipo = await stats_builder.obtener_stats_equipo(
+            nombre=nombre,
+            liga_id=liga_id,
+            temporada=temporada
+        )
+        
+        if not equipo:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Equipo '{nombre}' no encontrado"
+            )
+        
+        return {
+            "nombre": equipo.nombre,
+            "liga_id": equipo.liga_id,
+            "temporada": equipo.temporada,
+            "tiempo_completo": equipo.stats_completo.model_dump(),
+            "primer_tiempo": equipo.stats_primer_tiempo.model_dump(),
+            "segundo_tiempo": equipo.stats_segundo_tiempo.model_dump()
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error obteniendo estadísticas: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/prediction/validate")
+async def validate_prediction(request: ValidacionRequest):
+    """
+    Valida un pronóstico contra el resultado real.
+    
+    **Proceso:**
+    1. Obtiene el pronóstico guardado
+    2. Compara con el resultado real
+    3. Determina GANA/PIERDE para cada apuesta
+    
+    **Retorna:**
+    - Resultado de validación (GANA/PIERDE) para:
+      - Pronóstico principal
+      - Doble oportunidad
+      - Ambos marcan
+    """
+    try:
+        validacion = await validation_engine.validar_pronostico(
+            pronostico_id=request.pronostico_id,
+            gol_local_tc=request.gol_local_tc,
+            gol_visita_tc=request.gol_visita_tc,
+            gol_local_1mt=request.gol_local_1mt,
+            gol_visita_1mt=request.gol_visita_1mt
+        )
+        
+        return {
+            "success": True,
+            "validacion": {
+                "id": validacion.id,
+                "pronostico_id": validacion.pronostico_id,
+                "resultado_real": {
+                    "gol_local_tc": validacion.gol_local_tc,
+                    "gol_visita_tc": validacion.gol_visita_tc
+                },
+                "tiempo_completo": {
+                    "doble_oportunidad": validacion.validacion_tc.resultado_doble_oportunidad,
+                    "ambos_marcan": validacion.validacion_tc.resultado_ambos_marcan,
+                    "acierto_principal": validacion.validacion_tc.acierto_principal
+                }
+            }
+        }
+    
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logging.error(f"Error validando pronóstico: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/prediction/effectiveness")
+async def get_effectiveness():
+    """
+    Obtiene las estadísticas de efectividad del sistema.
+    
+    **Retorna:**
+    - Porcentaje de aciertos para:
+      - Pronóstico principal (L/E/V)
+      - Doble oportunidad (1X/X2/12)
+      - Ambos marcan (SI/NO)
+    - Separado por tiempo (TC, 1MT, 2MT)
+    """
+    try:
+        efectividad = await validation_engine.calcular_efectividad()
+        return {
+            "success": True,
+            "efectividad": efectividad
+        }
+    
+    except Exception as e:
+        logging.error(f"Error calculando efectividad: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/prediction/config")
+async def get_prediction_config():
+    """
+    Obtiene la configuración actual del motor de pronósticos.
+    
+    **Retorna:**
+    - Versión del algoritmo
+    - Umbrales utilizados
+    - Configuración general
+    """
+    from prediction_engine import Umbrales, Config
+    
+    return {
+        "version": Config.VERSION,
+        "umbrales": Umbrales.to_dict(),
+        "config": Config.to_dict()
+    }
+
+
+@api_router.get("/prediction/teams")
+async def list_teams(
+    liga_id: str = "SPAIN_LA_LIGA",
+    temporada: int = 2023
+):
+    """
+    Lista todos los equipos disponibles para pronósticos.
+    """
+    try:
+        equipos = await stats_builder.obtener_todos_equipos(liga_id, temporada)
+        
+        return {
+            "liga_id": liga_id,
+            "temporada": temporada,
+            "total": len(equipos),
+            "equipos": [
+                {
+                    "nombre": e.nombre,
+                    "puntos": e.stats_completo.puntos,
+                    "partidos_jugados": e.stats_completo.partidos_jugados,
+                    "rendimiento": e.stats_completo.rendimiento_general
+                }
+                for e in sorted(equipos, key=lambda x: -x.stats_completo.puntos)
+            ]
+        }
+    
+    except Exception as e:
+        logging.error(f"Error listando equipos: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include router
 app.include_router(api_router)
 
