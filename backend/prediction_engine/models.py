@@ -520,7 +520,7 @@ class FilaClasificacion(BaseModelConfig):
     También incluye stats de local y visitante.
     """
     
-    posicion: int = Field(..., ge=1, description="Posición")
+    posicion: int = Field(default=0, ge=0, description="Posición")
     equipo: str = Field(..., description="Nombre equipo")
     
     # Generales
