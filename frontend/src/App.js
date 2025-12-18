@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Matches from './pages/Matches';
 import Scraping from './pages/Scraping';
+import Predictions from './pages/Predictions';
+import Classification from './pages/Classification';
+import TeamStats from './pages/TeamStats';
 import Layout from './components/Layout';
 
 function App() {
@@ -12,6 +15,9 @@ function App() {
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
+            <Route path="predictions" element={<Predictions />} />
+            <Route path="classification" element={<Classification />} />
+            <Route path="teams" element={<TeamStats />} />
             <Route path="matches" element={<Matches />} />
             <Route path="scraping" element={<Scraping />} />
           </Route>
