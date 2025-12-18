@@ -143,12 +143,12 @@ class PredictionEngineTest:
             
         # Check if Real Madrid is first with expected points
         primer_equipo = equipos[0]
-        if primer_equipo["nombre"] != "Real Madrid":
-            self.log(f"❌ Expected Real Madrid first, got {primer_equipo['nombre']}", "ERROR")
+        if primer_equipo["equipo"] != "Real Madrid":
+            self.log(f"❌ Expected Real Madrid first, got {primer_equipo['equipo']}", "ERROR")
             return False
             
-        if primer_equipo["puntos"] != 95:
-            self.log(f"❌ Expected Real Madrid with 95 points, got {primer_equipo['puntos']}", "ERROR")
+        if primer_equipo["pts"] != 95:
+            self.log(f"❌ Expected Real Madrid with 95 points, got {primer_equipo['pts']}", "ERROR")
             return False
             
         # Test first half classification
