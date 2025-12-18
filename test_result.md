@@ -113,99 +113,123 @@ user_problem_statement: |
 backend:
   - task: "Build Statistics Endpoint - POST /api/prediction/build-stats"
     implemented: true
-    working: "NA"
+    working: true
     file: "prediction_engine/stats_builder.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado endpoint para construir estadísticas de equipos. Procesa partidos y calcula PJ, V, E, D, GF, GC, Pts por contexto (General/Local/Visitante) y tiempo (TC/1MT/2MT)"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Endpoint funciona correctamente. Construye estadísticas para 20 equipos de La Liga 2023. Retorna success=true, mensaje con equipos construidos, y lista de equipos procesados."
 
   - task: "Classification Endpoint - GET /api/prediction/classification"
     implemented: true
-    working: "NA"
+    working: true
     file: "prediction_engine/classification.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado endpoint para obtener tabla de clasificación ordenada por Puntos > Diferencia de goles > Goles a favor"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Clasificación funciona perfectamente. Real Madrid 1ro con 95 pts como esperado. Soporta tiempo_completo, primer_tiempo, segundo_tiempo. Retorna 20 equipos ordenados correctamente por puntos."
 
   - task: "Generate Prediction Endpoint - POST /api/prediction/generate"
     implemented: true
-    working: "NA"
+    working: true
     file: "prediction_engine/prediction_engine.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado motor de pronósticos con: cálculo de probabilidades, factores de ajuste (1-5), algoritmo de decisión, doble oportunidad, ambos marcan"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Motor de pronósticos funciona excelentemente. Genera pronósticos para TC/1MT/2MT con probabilidades (suman ~100%), doble oportunidad, ambos marcan, confianza. Real Madrid vs Almeria favorece correctamente a Real Madrid (L). Maneja errores 404 para equipos inexistentes."
 
   - task: "Team Stats Endpoint - GET /api/prediction/team/{nombre}"
     implemented: true
-    working: "NA"
+    working: true
     file: "prediction_engine/stats_builder.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint para obtener estadísticas detalladas de un equipo específico"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Estadísticas de equipo funcionan correctamente. Retorna stats completas para Barcelona: tiempo_completo, primer_tiempo, segundo_tiempo con todos los campos requeridos (PJ, V, E, D, GF, GC, Pts, rendimientos)."
 
   - task: "Validate Prediction Endpoint - POST /api/prediction/validate"
     implemented: true
-    working: "NA"
+    working: true
     file: "prediction_engine/validation.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado validador que compara pronósticos con resultados reales y determina GANA/PIERDE"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Validación de pronósticos funciona correctamente. Acepta pronostico_id y goles reales, retorna validación con resultado_real, doble_oportunidad, ambos_marcan, acierto_principal para tiempo_completo."
 
   - task: "Effectiveness Endpoint - GET /api/prediction/effectiveness"
     implemented: true
-    working: "NA"
+    working: true
     file: "prediction_engine/validation.py"
     stuck_count: 0
     priority: "low"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint para calcular métricas de efectividad del sistema"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Endpoint de efectividad funciona correctamente. Retorna success=true y datos de efectividad del sistema."
 
   - task: "Config Endpoint - GET /api/prediction/config"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "low"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint que retorna configuración y umbrales del algoritmo"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Configuración funciona perfectamente. Retorna version='1.0.0', umbrales del algoritmo, y configuración general como esperado."
 
   - task: "Teams List Endpoint - GET /api/prediction/teams"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "low"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint para listar todos los equipos disponibles con sus estadísticas básicas"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Lista de equipos funciona correctamente. Retorna 20 equipos de La Liga 2023 con nombre, puntos, partidos_jugados, rendimiento ordenados por puntos descendente."
 
 frontend:
   - task: "Frontend básico existente (Dashboard, Matches, Scraping)"
