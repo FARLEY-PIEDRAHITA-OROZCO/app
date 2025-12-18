@@ -132,11 +132,11 @@ class PredictionEngineTest:
         data = result["data"]
         
         # Validate structure
-        if "equipos" not in data:
-            self.log("❌ No 'equipos' field in classification response", "ERROR")
+        if "clasificacion" not in data:
+            self.log("❌ No 'clasificacion' field in classification response", "ERROR")
             return False
             
-        equipos = data["equipos"]
+        equipos = data["clasificacion"]
         if len(equipos) != 20:
             self.log(f"❌ Expected 20 teams in classification, got {len(equipos)}", "ERROR")
             return False
