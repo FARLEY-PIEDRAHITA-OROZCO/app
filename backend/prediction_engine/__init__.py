@@ -46,17 +46,60 @@ Fecha: Diciembre 2024
 __version__ = "1.0.0"
 __author__ = "PLLA 3.0 Migration Project"
 
-# Importaciones principales (se completarán al implementar cada módulo)
-# from .models import (
-#     Partido,
-#     EstadisticasEquipo,
-#     Equipo,
-#     Probabilidades,
-#     Pronostico,
-#     Validacion
-# )
-# from .config import CONFIG, UMBRALES
-# from .stats_builder import StatsBuilder
-# from .classification import ClassificationEngine
-# from .prediction_engine import PredictionEngine
-# from .validation import ValidationEngine
+# Importaciones principales
+from .models import (
+    EstadisticasEquipo,
+    Equipo,
+    Probabilidades,
+    PronosticoTiempo,
+    Pronostico,
+    Validacion,
+    ValidacionTiempo,
+    FilaClasificacion,
+    TablaClasificacion
+)
+from .config import (
+    Config,
+    Umbrales,
+    TipoTiempo,
+    ResultadoEnum,
+    DobleOportunidadEnum,
+    AmbosMarcamEnum,
+    ValidacionResultadoEnum,
+    CONFIG,
+    UMBRALES
+)
+from .stats_builder import StatsBuilder
+from .classification import ClassificationEngine
+from .prediction_engine import PredictionEngine
+from .validation import ValidationEngine
+
+__all__ = [
+    # Modelos
+    'EstadisticasEquipo',
+    'Equipo',
+    'Probabilidades',
+    'PronosticoTiempo',
+    'Pronostico',
+    'Validacion',
+    'ValidacionTiempo',
+    'FilaClasificacion',
+    'TablaClasificacion',
+    
+    # Configuración
+    'Config',
+    'Umbrales',
+    'TipoTiempo',
+    'ResultadoEnum',
+    'DobleOportunidadEnum',
+    'AmbosMarcamEnum',
+    'ValidacionResultadoEnum',
+    'CONFIG',
+    'UMBRALES',
+    
+    # Motores
+    'StatsBuilder',
+    'ClassificationEngine',
+    'PredictionEngine',
+    'ValidationEngine',
+]
