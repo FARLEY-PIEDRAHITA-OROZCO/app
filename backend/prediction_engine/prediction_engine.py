@@ -536,10 +536,9 @@ class PredictionEngine:
         - Si el pronóstico es EMPATE, cubrir con el segundo favorito
         """
         p_local = probabilidades.porcentaje_local
-        p_empate = probabilidades.porcentaje_empate
         p_visita = probabilidades.porcentaje_visita
         
-        # Suma sin empate
+        # Suma sin empate (local + visita, excluyendo empate)
         suma_sin_empate = p_local + p_visita
         
         # REGLA 1: Si suma sin empate es alta, apostar "12"
