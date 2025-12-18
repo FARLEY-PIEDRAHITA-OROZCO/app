@@ -101,3 +101,162 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  Implementar el Motor de Pronósticos Deportivos PLLA 3.0, un sistema que:
+  1. Construye estadísticas acumuladas por equipo (General, Local, Visitante)
+  2. Genera tablas de clasificación para 3 tiempos (TC, 1MT, 2MT)
+  3. Calcula pronósticos usando algoritmo de decisión basado en probabilidades
+  4. Genera Doble Oportunidad (1X, X2, 12) y Ambos Marcan (SI/NO)
+  5. Valida pronósticos contra resultados reales (GANA/PIERDE)
+
+backend:
+  - task: "Build Statistics Endpoint - POST /api/prediction/build-stats"
+    implemented: true
+    working: "NA"
+    file: "prediction_engine/stats_builder.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementado endpoint para construir estadísticas de equipos. Procesa partidos y calcula PJ, V, E, D, GF, GC, Pts por contexto (General/Local/Visitante) y tiempo (TC/1MT/2MT)"
+
+  - task: "Classification Endpoint - GET /api/prediction/classification"
+    implemented: true
+    working: "NA"
+    file: "prediction_engine/classification.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementado endpoint para obtener tabla de clasificación ordenada por Puntos > Diferencia de goles > Goles a favor"
+
+  - task: "Generate Prediction Endpoint - POST /api/prediction/generate"
+    implemented: true
+    working: "NA"
+    file: "prediction_engine/prediction_engine.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementado motor de pronósticos con: cálculo de probabilidades, factores de ajuste (1-5), algoritmo de decisión, doble oportunidad, ambos marcan"
+
+  - task: "Team Stats Endpoint - GET /api/prediction/team/{nombre}"
+    implemented: true
+    working: "NA"
+    file: "prediction_engine/stats_builder.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint para obtener estadísticas detalladas de un equipo específico"
+
+  - task: "Validate Prediction Endpoint - POST /api/prediction/validate"
+    implemented: true
+    working: "NA"
+    file: "prediction_engine/validation.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementado validador que compara pronósticos con resultados reales y determina GANA/PIERDE"
+
+  - task: "Effectiveness Endpoint - GET /api/prediction/effectiveness"
+    implemented: true
+    working: "NA"
+    file: "prediction_engine/validation.py"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint para calcular métricas de efectividad del sistema"
+
+  - task: "Config Endpoint - GET /api/prediction/config"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint que retorna configuración y umbrales del algoritmo"
+
+  - task: "Teams List Endpoint - GET /api/prediction/teams"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint para listar todos los equipos disponibles con sus estadísticas básicas"
+
+frontend:
+  - task: "Frontend básico existente (Dashboard, Matches, Scraping)"
+    implemented: true
+    working: true
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Frontend existente del job anterior, funcional"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Build Statistics Endpoint - POST /api/prediction/build-stats"
+    - "Classification Endpoint - GET /api/prediction/classification"
+    - "Generate Prediction Endpoint - POST /api/prediction/generate"
+    - "Team Stats Endpoint - GET /api/prediction/team/{nombre}"
+    - "Validate Prediction Endpoint - POST /api/prediction/validate"
+  stuck_tasks: []
+  test_all: true
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: |
+      He implementado el Motor de Pronósticos PLLA 3.0 completo. Los módulos están en /app/backend/prediction_engine/:
+      
+      - models.py: Modelos Pydantic (Equipo, EstadisticasEquipo, Pronostico, Validacion)
+      - config.py: Configuración y umbrales del algoritmo
+      - stats_builder.py: Constructor de estadísticas por equipo
+      - classification.py: Motor de clasificación
+      - prediction_engine.py: Motor principal de pronósticos
+      - validation.py: Validador de pronósticos
+      
+      Base de datos tiene 380 partidos de La Liga 2023 con datos de goles por tiempo.
+      
+      Por favor probar:
+      1. POST /api/prediction/build-stats - Construir estadísticas (debe ejecutarse primero)
+      2. GET /api/prediction/classification - Obtener tabla de posiciones
+      3. POST /api/prediction/generate - Generar pronóstico (usar equipos de La Liga)
+      4. GET /api/prediction/team/{nombre} - Stats de un equipo (ej: Barcelona, Real Madrid)
+      5. POST /api/prediction/validate - Validar un pronóstico con resultado real
+      
+      Equipos disponibles: Real Madrid, Barcelona, Girona, Atletico Madrid, Athletic Club, etc.
+      Liga ID: SPAIN_LA_LIGA, Temporada: 2023
