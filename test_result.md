@@ -246,51 +246,63 @@ frontend:
 
   - task: "Página de Pronósticos - /predictions"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/Predictions.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementada página para generar pronósticos. Selectores de equipos, botón generar, visualización de resultados con probabilidades, doble oportunidad y ambos marcan"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Página de pronósticos funciona perfectamente. Carga 21 equipos en selectores, genera pronósticos Barcelona vs Real Madrid correctamente mostrando TC/1MT/2MT con pronóstico principal (EMPATE/VISITA), doble oportunidad (1X/X2), ambos marcan (SI/NO), barras de probabilidades visuales y confianza. Maneja errores correctamente (equipos iguales). Todas las secciones requeridas funcionan."
 
   - task: "Página de Clasificación - /classification"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/Classification.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementada tabla de clasificación con selector de tiempo (TC/1MT/2MT), colores por zona (Champions, Europa, descenso)"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Clasificación funciona excelentemente. Carga tabla completa con Real Madrid 1ro (95 pts), permite cambiar entre Tiempo Completo/Primer Tiempo/Segundo Tiempo correctamente. Muestra todas las columnas requeridas (PJ, V, E, D, GF, GC, DIF, PTS, Rend). Colores de zonas funcionan: verde (Champions), azul (Europa), morado (Conference), rojo (descenso). Leyenda visible y funcional."
 
   - task: "Página de Equipos - /teams"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/TeamStats.jsx"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementada página de estadísticas por equipo con stats General/Local/Visitante para los 3 tiempos"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Estadísticas de equipo funcionan perfectamente. Carga 21 equipos en selector, muestra estadísticas completas para Barcelona con secciones Tiempo Completo/1MT/2MT. Cada sección incluye card General con PJ, V-E-D, GF-GC, PTS y barra de rendimiento. Cards Como Local y Como Visitante visibles. Scroll funciona para ver todas las secciones. Todas las funcionalidades requeridas operativas."
 
   - task: "Navegación actualizada con nuevas secciones"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/components/Layout.jsx"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Layout actualizado con secciones: Principal, Pronósticos, Datos. Incluye enlaces a todas las nuevas páginas"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Navegación funciona perfectamente. Sidebar muestra secciones Principal, Pronósticos, Datos correctamente. Todos los enlaces funcionan: Dashboard, Generar Pronóstico, Clasificación, Equipos, Partidos, Extracción. Footer muestra 'Motor PLLA 3.0 v1.0.0' como requerido. Navegación fluida entre todas las páginas."
 
 metadata:
   created_by: "main_agent"
