@@ -244,6 +244,54 @@ frontend:
         agent: "main"
         comment: "Frontend existente del job anterior, funcional"
 
+  - task: "Página de Pronósticos - /predictions"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/Predictions.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementada página para generar pronósticos. Selectores de equipos, botón generar, visualización de resultados con probabilidades, doble oportunidad y ambos marcan"
+
+  - task: "Página de Clasificación - /classification"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/Classification.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementada tabla de clasificación con selector de tiempo (TC/1MT/2MT), colores por zona (Champions, Europa, descenso)"
+
+  - task: "Página de Equipos - /teams"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/TeamStats.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementada página de estadísticas por equipo con stats General/Local/Visitante para los 3 tiempos"
+
+  - task: "Navegación actualizada con nuevas secciones"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/Layout.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Layout actualizado con secciones: Principal, Pronósticos, Datos. Incluye enlaces a todas las nuevas páginas"
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
