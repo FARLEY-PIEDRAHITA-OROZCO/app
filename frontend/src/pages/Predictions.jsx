@@ -5,133 +5,16 @@
  * - Seleccionar equipos local y visitante
  * - Generar pronósticos para TC, 1MT, 2MT
  * - Ver probabilidades, doble oportunidad y ambos marcan
+ * 
+ * NOTA: Usa renderizado sincrónico para evitar conflictos DOM con scripts externos
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import axios from 'axios';
 import { Target, TrendingUp, Users, AlertCircle, RefreshCw } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
-
-// Componente separado para la barra de probabilidades
-const ProbabilityBar = ({ local, empate, visita }) => {
-  return (
-    <div>
-      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Probabilidades</p>
-      <div style={{ display: 'flex', height: '24px', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
-        <div style={{ 
-          width: `${local}%`, 
-          background: '#10b981',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '0.75rem',
-          fontWeight: '600',
-          color: 'white'
-        }}>
-          {local > 15 ? `${local.toFixed(1)}%` : ''}
-        </div>
-        <div style={{ 
-          width: `${empate}%`, 
-          background: '#f59e0b',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '0.75rem',
-          fontWeight: '600',
-          color: 'white'
-        }}>
-          {empate > 15 ? `${empate.toFixed(1)}%` : ''}
-        </div>
-        <div style={{ 
-          width: `${visita}%`, 
-          background: '#ef4444',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '0.75rem',
-          fontWeight: '600',
-          color: 'white'
-        }}>
-          {visita > 15 ? `${visita.toFixed(1)}%` : ''}
-        </div>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-        <span>{local.toFixed(1)}% Local</span>
-        <span>{empate.toFixed(1)}% Empate</span>
-        <span>{visita.toFixed(1)}% Visita</span>
-      </div>
-    </div>
-  );
-};
-
-// Componente separado para la tarjeta de pronóstico
-const PredictionCard = ({ title, data, icon, getResultColor, getResultText }) => {
-  if (!data) return null;
-  
-  return (
-    <div className="card" style={{ marginBottom: '1rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-        {icon}
-        <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>{title}</h3>
-      </div>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
-        <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Pronóstico</p>
-          <p style={{ 
-            fontSize: '1.5rem', 
-            fontWeight: '700', 
-            color: getResultColor(data.pronostico)
-          }}>
-            {getResultText(data.pronostico)}
-          </p>
-        </div>
-        
-        <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Doble Oportunidad</p>
-          <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)' }}>
-            {data.doble_oportunidad}
-          </p>
-        </div>
-        
-        <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Ambos Marcan</p>
-          <p style={{ 
-            fontSize: '1.5rem', 
-            fontWeight: '700', 
-            color: data.ambos_marcan === 'SI' ? '#10b981' : '#ef4444'
-          }}>
-            {data.ambos_marcan}
-          </p>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: '1rem' }}>
-        <ProbabilityBar 
-          local={data.probabilidades?.local || 0}
-          empate={data.probabilidades?.empate || 0}
-          visita={data.probabilidades?.visita || 0}
-        />
-      </div>
-
-      <div>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-          Confianza: {(data.confianza || 0).toFixed(1)}%
-        </p>
-        <div style={{ background: 'var(--bg-secondary)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
-          <div style={{ 
-            width: `${data.confianza || 0}%`, 
-            background: (data.confianza || 0) > 60 ? '#10b981' : (data.confianza || 0) > 40 ? '#f59e0b' : '#ef4444',
-            height: '100%',
-            transition: 'width 0.3s'
-          }} />
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const Predictions = () => {
   const [teams, setTeams] = useState([]);
@@ -141,6 +24,10 @@ const Predictions = () => {
   const [loading, setLoading] = useState(false);
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [error, setError] = useState(null);
+  const [renderKey, setRenderKey] = useState(0);
+  
+  // Unique ID for this component instance
+  const componentId = useId();
 
   useEffect(() => {
     fetchTeams();
@@ -172,7 +59,9 @@ const Predictions = () => {
     try {
       setLoading(true);
       setError(null);
+      // Clear prediction and force new render key to prevent DOM conflicts
       setPrediction(null);
+      setRenderKey(prev => prev + 1);
 
       const response = await axios.post(`${API}/prediction/generate`, {
         equipo_local: localTeam,
@@ -181,7 +70,11 @@ const Predictions = () => {
         temporada: 2023
       });
 
+      // Small delay to ensure DOM is stable before rendering new content
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
       setPrediction(response.data.pronostico);
+      setRenderKey(prev => prev + 1);
     } catch (err) {
       console.error('Error generating prediction:', err);
       setError(err.response?.data?.detail || 'Error generando pronóstico');
@@ -208,8 +101,128 @@ const Predictions = () => {
     }
   };
 
+  // Render probability bar inline to avoid component reconciliation issues
+  const renderProbabilityBar = (local, empate, visita) => {
+    return (
+      <div>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Probabilidades</p>
+        <div style={{ display: 'flex', height: '24px', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
+          <div style={{ 
+            width: `${local}%`, 
+            background: '#10b981',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+            color: 'white'
+          }}>
+            {local > 15 ? `${local.toFixed(1)}%` : ''}
+          </div>
+          <div style={{ 
+            width: `${empate}%`, 
+            background: '#f59e0b',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+            color: 'white'
+          }}>
+            {empate > 15 ? `${empate.toFixed(1)}%` : ''}
+          </div>
+          <div style={{ 
+            width: `${visita}%`, 
+            background: '#ef4444',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+            color: 'white'
+          }}>
+            {visita > 15 ? `${visita.toFixed(1)}%` : ''}
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+          <span>{local.toFixed(1)}% Local</span>
+          <span>{empate.toFixed(1)}% Empate</span>
+          <span>{visita.toFixed(1)}% Visita</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Render prediction card inline
+  const renderPredictionCard = (title, data, iconColor, uniqueKey) => {
+    if (!data) return null;
+    
+    const localProb = data.probabilidades?.local || 0;
+    const empateProb = data.probabilidades?.empate || 0;
+    const visitaProb = data.probabilidades?.visita || 0;
+    const confianza = data.confianza || 0;
+    
+    return (
+      <div key={uniqueKey} className="card" style={{ marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+          <TrendingUp size={20} color={iconColor} />
+          <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>{title}</h3>
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Pronóstico</p>
+            <p style={{ 
+              fontSize: '1.5rem', 
+              fontWeight: '700', 
+              color: getResultColor(data.pronostico)
+            }}>
+              {getResultText(data.pronostico)}
+            </p>
+          </div>
+          
+          <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Doble Oportunidad</p>
+            <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)' }}>
+              {data.doble_oportunidad}
+            </p>
+          </div>
+          
+          <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Ambos Marcan</p>
+            <p style={{ 
+              fontSize: '1.5rem', 
+              fontWeight: '700', 
+              color: data.ambos_marcan === 'SI' ? '#10b981' : '#ef4444'
+            }}>
+              {data.ambos_marcan}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '1rem' }}>
+          {renderProbabilityBar(localProb, empateProb, visitaProb)}
+        </div>
+
+        <div>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+            Confianza: {confianza.toFixed(1)}%
+          </p>
+          <div style={{ background: 'var(--bg-secondary)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+            <div style={{ 
+              width: `${confianza}%`, 
+              background: confianza > 60 ? '#10b981' : confianza > 40 ? '#f59e0b' : '#ef4444',
+              height: '100%',
+              transition: 'width 0.3s'
+            }} />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="fade-in">
+    <div className="fade-in" key={`predictions-root-${componentId}`}>
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>Pronósticos</h1>
         <p style={{ color: 'var(--text-secondary)' }}>Genera pronósticos usando el motor PLLA 3.0</p>
@@ -233,8 +246,8 @@ const Predictions = () => {
               disabled={loadingTeams}
             >
               <option value="">Seleccionar equipo</option>
-              {teams.map((team) => (
-                <option key={`local-${team.nombre}`} value={team.nombre}>
+              {teams.map((team, idx) => (
+                <option key={`local-team-${idx}-${team.nombre}`} value={team.nombre}>
                   {team.nombre} ({team.puntos} pts)
                 </option>
               ))}
@@ -256,8 +269,8 @@ const Predictions = () => {
               disabled={loadingTeams}
             >
               <option value="">Seleccionar equipo</option>
-              {teams.map((team) => (
-                <option key={`away-${team.nombre}`} value={team.nombre}>
+              {teams.map((team, idx) => (
+                <option key={`away-team-${idx}-${team.nombre}`} value={team.nombre}>
                   {team.nombre} ({team.puntos} pts)
                 </option>
               ))}
@@ -265,7 +278,7 @@ const Predictions = () => {
           </div>
         </div>
 
-        {error && (
+        {error !== null && error !== '' && (
           <div style={{ 
             marginTop: '1rem', 
             padding: '0.75rem', 
@@ -288,51 +301,51 @@ const Predictions = () => {
           style={{ marginTop: '1.5rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
         >
           {loading ? (
-            <React.Fragment>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <RefreshCw size={18} className="spinning" /> Generando...
-            </React.Fragment>
+            </span>
           ) : (
-            <React.Fragment>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Target size={18} /> Generar Pronóstico
-            </React.Fragment>
+            </span>
           )}
         </button>
       </div>
 
-      {prediction && (
-        <div className="fade-in">
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
-            {prediction.equipo_local} vs {prediction.equipo_visitante}
-          </h2>
-          
-          <PredictionCard 
-            title="Tiempo Completo (90 min)" 
-            data={prediction.tiempo_completo}
-            icon={<TrendingUp size={20} color="#10b981" />}
-            getResultColor={getResultColor}
-            getResultText={getResultText}
-          />
-          <PredictionCard 
-            title="Primer Tiempo (1MT)" 
-            data={prediction.primer_tiempo}
-            icon={<TrendingUp size={20} color="#3b82f6" />}
-            getResultColor={getResultColor}
-            getResultText={getResultText}
-          />
-          <PredictionCard 
-            title="Segundo Tiempo (2MT)" 
-            data={prediction.segundo_tiempo}
-            icon={<TrendingUp size={20} color="#f59e0b" />}
-            getResultColor={getResultColor}
-            getResultText={getResultText}
-          />
+      {/* Results section with unique key to force complete re-render */}
+      <div key={`results-container-${renderKey}`}>
+        {prediction !== null && (
+          <div className="fade-in">
+            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
+              {prediction.equipo_local} vs {prediction.equipo_visitante}
+            </h2>
+            
+            {renderPredictionCard(
+              "Tiempo Completo (90 min)", 
+              prediction.tiempo_completo, 
+              "#10b981",
+              `tc-card-${renderKey}`
+            )}
+            {renderPredictionCard(
+              "Primer Tiempo (1MT)", 
+              prediction.primer_tiempo, 
+              "#3b82f6",
+              `1mt-card-${renderKey}`
+            )}
+            {renderPredictionCard(
+              "Segundo Tiempo (2MT)", 
+              prediction.segundo_tiempo, 
+              "#f59e0b",
+              `2mt-card-${renderKey}`
+            )}
 
-          <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            Versión del algoritmo: {prediction.version_algoritmo} | 
-            Generado: {new Date(prediction.fecha_generacion).toLocaleString('es-ES')}
+            <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              Versión del algoritmo: {prediction.version_algoritmo} | 
+              Generado: {new Date(prediction.fecha_generacion).toLocaleString('es-ES')}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
