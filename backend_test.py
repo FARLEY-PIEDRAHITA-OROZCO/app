@@ -278,14 +278,14 @@ class PredictionEngineTest:
             self.log(f"❌ Expected Barcelona, got {data['nombre']}", "ERROR")
             return False
             
-        # Validate stats structure
+        # Validate stats structure - the API returns flat structure, not nested by general/local/visitante
         for tiempo in ["tiempo_completo", "primer_tiempo", "segundo_tiempo"]:
             stats = data[tiempo]
-            required_stats = ["general", "local", "visitante"]
+            required_stats = ["partidos_jugados", "victorias", "empates", "derrotas", "goles_favor", "goles_contra", "puntos"]
             
-            for stat_type in required_stats:
-                if stat_type not in stats:
-                    self.log(f"❌ Missing {stat_type} in {tiempo} stats", "ERROR")
+            for stat_field in required_stats:
+                if stat_field not in stats:
+                    self.log(f"❌ Missing {stat_field} in {tiempo} stats", "ERROR")
                     return False
                     
         self.log("✅ Team statistics working correctly")
