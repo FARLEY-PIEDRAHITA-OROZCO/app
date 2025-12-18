@@ -7,100 +7,90 @@
         <meta name="description" content="Sistema de Pronósticos PLLA 3.0" />
         <meta name="google" content="notranslate" />
         <meta http-equiv="Content-Language" content="es" />
-        <title>Emergent | Fullstack App</title>
-        <!-- Defer external scripts to prevent React DOM conflicts -->
+        <title>PLLA 3.0 - Sistema de Pronósticos</title>
         <script>
-            // DOM Protection: Prevent external scripts from modifying React-managed nodes
+            // DOM Protection for production environment
             window.__REACT_READY__ = false;
+            window.__IS_LOCAL__ = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             
-            // Store original insertBefore to restore later if needed
-            const originalInsertBefore = Node.prototype.insertBefore;
-            
-            // Protect the React root container from external modifications
-            Node.prototype.insertBefore = function(newNode, referenceNode) {
-                // If React root exists and this is being called on a parent of root
-                const reactRoot = document.getElementById('root');
-                if (reactRoot && this.contains && this.contains(reactRoot) && !window.__REACT_READY__) {
-                    // Allow the operation but log for debugging
-                    try {
-                        return originalInsertBefore.call(this, newNode, referenceNode);
-                    } catch (e) {
-                        // Silently handle errors from external scripts
-                        console.warn('DOM operation intercepted:', e.message);
-                        return newNode;
+            if (!window.__IS_LOCAL__) {
+                const originalInsertBefore = Node.prototype.insertBefore;
+                Node.prototype.insertBefore = function(newNode, referenceNode) {
+                    const reactRoot = document.getElementById('root');
+                    if (reactRoot && this.contains && this.contains(reactRoot) && !window.__REACT_READY__) {
+                        try {
+                            return originalInsertBefore.call(this, newNode, referenceNode);
+                        } catch (e) {
+                            console.warn('DOM operation intercepted:', e.message);
+                            return newNode;
+                        }
                     }
-                }
-                return originalInsertBefore.call(this, newNode, referenceNode);
-            };
+                    return originalInsertBefore.call(this, newNode, referenceNode);
+                };
+            }
         </script>
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
-        <!-- React App Container - Isolated from external scripts -->
         <div id="react-container" style="isolation: isolate;">
             <div id="root"></div>
         </div>
         
-        <!-- Emergent Badge - Outside React container -->
+        <!-- Emergent Badge - Solo visible en producción -->
         <a
             id="emergent-badge"
             target="_blank"
             href="https://app.emergent.sh/?utm_source=emergent-badge"
             style="
-                display: flex !important;
-                align-items: center !important;
-                position: fixed !important;
+                display: none;
+                align-items: center;
+                position: fixed;
                 bottom: 20px;
                 right: 20px;
                 text-decoration: none;
                 padding: 6px 10px;
-                font-family: -apple-system, BlinkMacSystemFont,
-                    &quot;Segoe UI&quot;, Roboto, Oxygen, Ubuntu, Cantarell,
-                    &quot;Open Sans&quot;, &quot;Helvetica Neue&quot;,
-                    sans-serif !important;
-                font-size: 12px !important;
-                z-index: 9999 !important;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-                border-radius: 8px !important;
-                background-color: #ffffff !important;
-                border: 1px solid rgba(255, 255, 255, 0.25) !important;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 12px;
+                z-index: 9999;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                border-radius: 8px;
+                background-color: #ffffff;
+                border: 1px solid rgba(255, 255, 255, 0.25);
             "
         >
-            <div
-                style="display: flex; flex-direction: row; align-items: center"
-            >
+            <div style="display: flex; flex-direction: row; align-items: center">
                 <img
                     style="width: 20px; height: 20px; margin-right: 8px"
                     src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4"
                 />
-                <p
-                    style="
-                        color: #000000;
-                        font-family: -apple-system, BlinkMacSystemFont,
-                            &quot;Segoe UI&quot;, Roboto, Oxygen, Ubuntu,
-                            Cantarell, &quot;Open Sans&quot;,
-                            &quot;Helvetica Neue&quot;, sans-serif !important;
-                        font-size: 12px !important;
-                        align-items: center;
-                        margin-bottom: 0;
-                    "
-                >
+                <p style="color: #000000; font-size: 12px; margin-bottom: 0;">
                     Made with Emergent
                 </p>
             </div>
         </a>
         
-        <!-- External scripts deferred to after React mount -->
         <script>
-            // Wait for React to be ready before loading external scripts
+            // Solo cargar scripts externos en producción (no en localhost)
             function loadExternalScripts() {
-                // Load Emergent script
+                // No cargar en desarrollo local
+                if (window.__IS_LOCAL__) {
+                    console.log('[PLLA 3.0] Modo desarrollo local - scripts externos deshabilitados');
+                    return;
+                }
+                
+                // Mostrar badge de Emergent solo en producción
+                var badge = document.getElementById('emergent-badge');
+                if (badge) {
+                    badge.style.display = 'flex';
+                }
+                
+                // Cargar script de Emergent
                 var emergentScript = document.createElement('script');
                 emergentScript.src = 'https://assets.emergent.sh/scripts/emergent-main.js';
                 emergentScript.async = true;
                 document.body.appendChild(emergentScript);
                 
-                // PostHog initialization (deferred)
+                // PostHog Analytics (solo producción)
                 !(function (t, e) {
                     var o, n, p, r;
                     e.__SV ||
@@ -111,48 +101,26 @@
                                 var o = e.split(".");
                                 2 == o.length && ((t = t[o[0]]), (e = o[1])),
                                     (t[e] = function () {
-                                        t.push(
-                                            [e].concat(
-                                                Array.prototype.slice.call(
-                                                    arguments,
-                                                    0,
-                                                ),
-                                            ),
-                                        );
+                                        t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
                                     });
                             }
-                            ((p = t.createElement("script")).type =
-                                "text/javascript"),
+                            ((p = t.createElement("script")).type = "text/javascript"),
                                 (p.crossOrigin = "anonymous"),
                                 (p.async = !0),
-                                (p.src =
-                                    s.api_host.replace(
-                                        ".i.posthog.com",
-                                        "-assets.i.posthog.com",
-                                    ) + "/static/array.js"),
-                                (r =
-                                    t.getElementsByTagName(
-                                        "script",
-                                    )[0]).parentNode.insertBefore(p, r);
+                                (p.src = s.api_host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js"),
+                                (r = t.getElementsByTagName("script")[0]).parentNode.insertBefore(p, r);
                             var u = e;
                             for (
                                 void 0 !== a ? (u = e[a] = []) : (a = "posthog"),
                                     u.people = u.people || [],
                                     u.toString = function (t) {
                                         var e = "posthog";
-                                        return (
-                                            "posthog" !== a && (e += "." + a),
-                                            t || (e += " (stub)"),
-                                            e
-                                        );
+                                        return "posthog" !== a && (e += "." + a), t || (e += " (stub)"), e;
                                     },
                                     u.people.toString = function () {
                                         return u.toString(1) + ".people (stub)";
                                     },
-                                    o =
-                                        "init me ws ys ps bs capture je Di ks register register_once register_for_session unregister unregister_for_session Ps getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey canRenderSurveyAsync identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty Es $s createPersonProfile Is opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing Ss debug xs getPageViewId captureTraceFeedback captureTraceMetric".split(
-                                            " ",
-                                        ),
+                                    o = "init capture identify".split(" "),
                                     n = 0;
                                 n < o.length;
                                 n++
@@ -168,7 +136,6 @@
                 });
             }
             
-            // Expose function for React to call when ready
             window.__loadExternalScripts = loadExternalScripts;
         </script>
     </body>
