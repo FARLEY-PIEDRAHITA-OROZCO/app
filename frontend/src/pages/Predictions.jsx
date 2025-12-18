@@ -1,15 +1,11 @@
 /**
  * Página de Pronósticos - Motor PLLA 3.0
  * 
- * Permite:
- * - Seleccionar equipos local y visitante
- * - Generar pronósticos para TC, 1MT, 2MT
- * - Ver probabilidades, doble oportunidad y ambos marcan
- * 
- * NOTA: Usa renderizado sincrónico para evitar conflictos DOM con scripts externos
+ * SOLUCIÓN: Estructura DOM fija - sin renderizado condicional que altere estructura
+ * Solo cambia visibilidad y contenido, nunca la estructura del árbol DOM
  */
 
-import React, { useState, useEffect, useId } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Target, TrendingUp, Users, AlertCircle, RefreshCw } from 'lucide-react';
 
@@ -23,11 +19,7 @@ const Predictions = () => {
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingTeams, setLoadingTeams] = useState(true);
-  const [error, setError] = useState(null);
-  const [renderKey, setRenderKey] = useState(0);
-  
-  // Unique ID for this component instance
-  const componentId = useId();
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchTeams();
@@ -58,10 +50,7 @@ const Predictions = () => {
 
     try {
       setLoading(true);
-      setError(null);
-      // Clear prediction and force new render key to prevent DOM conflicts
-      setPrediction(null);
-      setRenderKey(prev => prev + 1);
+      setError('');
 
       const response = await axios.post(`${API}/prediction/generate`, {
         equipo_local: localTeam,
@@ -70,11 +59,7 @@ const Predictions = () => {
         temporada: 2023
       });
 
-      // Small delay to ensure DOM is stable before rendering new content
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
       setPrediction(response.data.pronostico);
-      setRenderKey(prev => prev + 1);
     } catch (err) {
       console.error('Error generating prediction:', err);
       setError(err.response?.data?.detail || 'Error generando pronóstico');
@@ -84,150 +69,39 @@ const Predictions = () => {
   };
 
   const getResultColor = (result) => {
-    switch (result) {
-      case 'L': return '#10b981';
-      case 'V': return '#ef4444';
-      case 'E': return '#f59e0b';
-      default: return '#94a3b8';
-    }
+    const colors = { 'L': '#10b981', 'V': '#ef4444', 'E': '#f59e0b' };
+    return colors[result] || '#94a3b8';
   };
 
   const getResultText = (result) => {
-    switch (result) {
-      case 'L': return 'LOCAL';
-      case 'V': return 'VISITA';
-      case 'E': return 'EMPATE';
-      default: return result || '-';
+    const texts = { 'L': 'LOCAL', 'V': 'VISITA', 'E': 'EMPATE' };
+    return texts[result] || '-';
+  };
+
+  // Safe access to nested prediction data
+  const getPredictionData = (timeKey) => {
+    if (!prediction || !prediction[timeKey]) {
+      return { pronostico: '-', doble_oportunidad: '-', ambos_marcan: '-', probabilidades: { local: 0, empate: 0, visita: 0 }, confianza: 0 };
     }
+    return prediction[timeKey];
   };
 
-  // Render probability bar inline to avoid component reconciliation issues
-  const renderProbabilityBar = (local, empate, visita) => {
-    return (
-      <div>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Probabilidades</p>
-        <div style={{ display: 'flex', height: '24px', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
-          <div style={{ 
-            width: `${local}%`, 
-            background: '#10b981',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '0.75rem',
-            fontWeight: '600',
-            color: 'white'
-          }}>
-            {local > 15 ? `${local.toFixed(1)}%` : ''}
-          </div>
-          <div style={{ 
-            width: `${empate}%`, 
-            background: '#f59e0b',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '0.75rem',
-            fontWeight: '600',
-            color: 'white'
-          }}>
-            {empate > 15 ? `${empate.toFixed(1)}%` : ''}
-          </div>
-          <div style={{ 
-            width: `${visita}%`, 
-            background: '#ef4444',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '0.75rem',
-            fontWeight: '600',
-            color: 'white'
-          }}>
-            {visita > 15 ? `${visita.toFixed(1)}%` : ''}
-          </div>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-          <span>{local.toFixed(1)}% Local</span>
-          <span>{empate.toFixed(1)}% Empate</span>
-          <span>{visita.toFixed(1)}% Visita</span>
-        </div>
-      </div>
-    );
-  };
+  const tcData = getPredictionData('tiempo_completo');
+  const mt1Data = getPredictionData('primer_tiempo');
+  const mt2Data = getPredictionData('segundo_tiempo');
 
-  // Render prediction card inline
-  const renderPredictionCard = (title, data, iconColor, uniqueKey) => {
-    if (!data) return null;
-    
-    const localProb = data.probabilidades?.local || 0;
-    const empateProb = data.probabilidades?.empate || 0;
-    const visitaProb = data.probabilidades?.visita || 0;
-    const confianza = data.confianza || 0;
-    
-    return (
-      <div key={uniqueKey} className="card" style={{ marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-          <TrendingUp size={20} color={iconColor} />
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>{title}</h3>
-        </div>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
-          <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Pronóstico</p>
-            <p style={{ 
-              fontSize: '1.5rem', 
-              fontWeight: '700', 
-              color: getResultColor(data.pronostico)
-            }}>
-              {getResultText(data.pronostico)}
-            </p>
-          </div>
-          
-          <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Doble Oportunidad</p>
-            <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)' }}>
-              {data.doble_oportunidad}
-            </p>
-          </div>
-          
-          <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Ambos Marcan</p>
-            <p style={{ 
-              fontSize: '1.5rem', 
-              fontWeight: '700', 
-              color: data.ambos_marcan === 'SI' ? '#10b981' : '#ef4444'
-            }}>
-              {data.ambos_marcan}
-            </p>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: '1rem' }}>
-          {renderProbabilityBar(localProb, empateProb, visitaProb)}
-        </div>
-
-        <div>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-            Confianza: {confianza.toFixed(1)}%
-          </p>
-          <div style={{ background: 'var(--bg-secondary)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
-            <div style={{ 
-              width: `${confianza}%`, 
-              background: confianza > 60 ? '#10b981' : confianza > 40 ? '#f59e0b' : '#ef4444',
-              height: '100%',
-              transition: 'width 0.3s'
-            }} />
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // Determine visibility
+  const showResults = prediction !== null;
+  const showError = error !== '';
 
   return (
-    <div className="fade-in" key={`predictions-root-${componentId}`}>
+    <div className="fade-in">
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>Pronósticos</h1>
         <p style={{ color: 'var(--text-secondary)' }}>Genera pronósticos usando el motor PLLA 3.0</p>
       </div>
 
+      {/* Selection Card - Always rendered */}
       <div className="card" style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Users size={20} />
@@ -246,8 +120,8 @@ const Predictions = () => {
               disabled={loadingTeams}
             >
               <option value="">Seleccionar equipo</option>
-              {teams.map((team, idx) => (
-                <option key={`local-team-${idx}-${team.nombre}`} value={team.nombre}>
+              {teams.map((team) => (
+                <option key={`local-${team.nombre}`} value={team.nombre}>
                   {team.nombre} ({team.puntos} pts)
                 </option>
               ))}
@@ -269,8 +143,8 @@ const Predictions = () => {
               disabled={loadingTeams}
             >
               <option value="">Seleccionar equipo</option>
-              {teams.map((team, idx) => (
-                <option key={`away-team-${idx}-${team.nombre}`} value={team.nombre}>
+              {teams.map((team) => (
+                <option key={`away-${team.nombre}`} value={team.nombre}>
                   {team.nombre} ({team.puntos} pts)
                 </option>
               ))}
@@ -278,21 +152,20 @@ const Predictions = () => {
           </div>
         </div>
 
-        {error !== null && error !== '' && (
-          <div style={{ 
-            marginTop: '1rem', 
-            padding: '0.75rem', 
-            background: 'rgba(239, 68, 68, 0.1)', 
-            borderRadius: '8px',
-            color: '#ef4444',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <AlertCircle size={18} />
-            <span>{error}</span>
-          </div>
-        )}
+        {/* Error message - Always in DOM, visibility controlled by CSS */}
+        <div style={{ 
+          marginTop: '1rem', 
+          padding: '0.75rem', 
+          background: 'rgba(239, 68, 68, 0.1)', 
+          borderRadius: '8px',
+          color: '#ef4444',
+          display: showError ? 'flex' : 'none',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}>
+          <AlertCircle size={18} />
+          <span>{error || 'placeholder'}</span>
+        </div>
 
         <button
           className="btn btn-primary"
@@ -300,51 +173,188 @@ const Predictions = () => {
           disabled={loading || !localTeam || !awayTeam}
           style={{ marginTop: '1.5rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
         >
-          {loading ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <RefreshCw size={18} className="spinning" /> Generando...
-            </span>
-          ) : (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Target size={18} /> Generar Pronóstico
-            </span>
-          )}
+          <span style={{ display: loading ? 'flex' : 'none', alignItems: 'center', gap: '0.5rem' }}>
+            <RefreshCw size={18} className="spinning" /> Generando...
+          </span>
+          <span style={{ display: loading ? 'none' : 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Target size={18} /> Generar Pronóstico
+          </span>
         </button>
       </div>
 
-      {/* Results section with unique key to force complete re-render */}
-      <div key={`results-container-${renderKey}`}>
-        {prediction !== null && (
-          <div className="fade-in">
-            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
-              {prediction.equipo_local} vs {prediction.equipo_visitante}
-            </h2>
-            
-            {renderPredictionCard(
-              "Tiempo Completo (90 min)", 
-              prediction.tiempo_completo, 
-              "#10b981",
-              `tc-card-${renderKey}`
-            )}
-            {renderPredictionCard(
-              "Primer Tiempo (1MT)", 
-              prediction.primer_tiempo, 
-              "#3b82f6",
-              `1mt-card-${renderKey}`
-            )}
-            {renderPredictionCard(
-              "Segundo Tiempo (2MT)", 
-              prediction.segundo_tiempo, 
-              "#f59e0b",
-              `2mt-card-${renderKey}`
-            )}
-
-            <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              Versión del algoritmo: {prediction.version_algoritmo} | 
-              Generado: {new Date(prediction.fecha_generacion).toLocaleString('es-ES')}
+      {/* Results Section - Always in DOM, visibility controlled by CSS */}
+      <div style={{ display: showResults ? 'block' : 'none' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
+          {prediction?.equipo_local || 'Local'} vs {prediction?.equipo_visitante || 'Visitante'}
+        </h2>
+        
+        {/* Tiempo Completo Card - Always rendered */}
+        <div className="card" style={{ marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <TrendingUp size={20} color="#10b981" />
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Tiempo Completo (90 min)</h3>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Pronóstico</p>
+              <p style={{ fontSize: '1.5rem', fontWeight: '700', color: getResultColor(tcData.pronostico) }}>
+                {getResultText(tcData.pronostico)}
+              </p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Doble Oportunidad</p>
+              <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)' }}>{tcData.doble_oportunidad}</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Ambos Marcan</p>
+              <p style={{ fontSize: '1.5rem', fontWeight: '700', color: tcData.ambos_marcan === 'SI' ? '#10b981' : '#ef4444' }}>
+                {tcData.ambos_marcan}
+              </p>
             </div>
           </div>
-        )}
+
+          <div style={{ marginBottom: '1rem' }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Probabilidades</p>
+            <div style={{ display: 'flex', height: '24px', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
+              <div style={{ width: `${tcData.probabilidades?.local || 0}%`, background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'white' }}>
+                {(tcData.probabilidades?.local || 0) > 15 ? `${(tcData.probabilidades?.local || 0).toFixed(1)}%` : ''}
+              </div>
+              <div style={{ width: `${tcData.probabilidades?.empate || 0}%`, background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'white' }}>
+                {(tcData.probabilidades?.empate || 0) > 15 ? `${(tcData.probabilidades?.empate || 0).toFixed(1)}%` : ''}
+              </div>
+              <div style={{ width: `${tcData.probabilidades?.visita || 0}%`, background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'white' }}>
+                {(tcData.probabilidades?.visita || 0) > 15 ? `${(tcData.probabilidades?.visita || 0).toFixed(1)}%` : ''}
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              <span>{(tcData.probabilidades?.local || 0).toFixed(1)}% Local</span>
+              <span>{(tcData.probabilidades?.empate || 0).toFixed(1)}% Empate</span>
+              <span>{(tcData.probabilidades?.visita || 0).toFixed(1)}% Visita</span>
+            </div>
+          </div>
+
+          <div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Confianza: {(tcData.confianza || 0).toFixed(1)}%</p>
+            <div style={{ background: 'var(--bg-secondary)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+              <div style={{ width: `${tcData.confianza || 0}%`, background: (tcData.confianza || 0) > 60 ? '#10b981' : (tcData.confianza || 0) > 40 ? '#f59e0b' : '#ef4444', height: '100%' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Primer Tiempo Card - Always rendered */}
+        <div className="card" style={{ marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <TrendingUp size={20} color="#3b82f6" />
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Primer Tiempo (1MT)</h3>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Pronóstico</p>
+              <p style={{ fontSize: '1.5rem', fontWeight: '700', color: getResultColor(mt1Data.pronostico) }}>
+                {getResultText(mt1Data.pronostico)}
+              </p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Doble Oportunidad</p>
+              <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)' }}>{mt1Data.doble_oportunidad}</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Ambos Marcan</p>
+              <p style={{ fontSize: '1.5rem', fontWeight: '700', color: mt1Data.ambos_marcan === 'SI' ? '#10b981' : '#ef4444' }}>
+                {mt1Data.ambos_marcan}
+              </p>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Probabilidades</p>
+            <div style={{ display: 'flex', height: '24px', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
+              <div style={{ width: `${mt1Data.probabilidades?.local || 0}%`, background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'white' }}>
+                {(mt1Data.probabilidades?.local || 0) > 15 ? `${(mt1Data.probabilidades?.local || 0).toFixed(1)}%` : ''}
+              </div>
+              <div style={{ width: `${mt1Data.probabilidades?.empate || 0}%`, background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'white' }}>
+                {(mt1Data.probabilidades?.empate || 0) > 15 ? `${(mt1Data.probabilidades?.empate || 0).toFixed(1)}%` : ''}
+              </div>
+              <div style={{ width: `${mt1Data.probabilidades?.visita || 0}%`, background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'white' }}>
+                {(mt1Data.probabilidades?.visita || 0) > 15 ? `${(mt1Data.probabilidades?.visita || 0).toFixed(1)}%` : ''}
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              <span>{(mt1Data.probabilidades?.local || 0).toFixed(1)}% Local</span>
+              <span>{(mt1Data.probabilidades?.empate || 0).toFixed(1)}% Empate</span>
+              <span>{(mt1Data.probabilidades?.visita || 0).toFixed(1)}% Visita</span>
+            </div>
+          </div>
+
+          <div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Confianza: {(mt1Data.confianza || 0).toFixed(1)}%</p>
+            <div style={{ background: 'var(--bg-secondary)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+              <div style={{ width: `${mt1Data.confianza || 0}%`, background: (mt1Data.confianza || 0) > 60 ? '#10b981' : (mt1Data.confianza || 0) > 40 ? '#f59e0b' : '#ef4444', height: '100%' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Segundo Tiempo Card - Always rendered */}
+        <div className="card" style={{ marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <TrendingUp size={20} color="#f59e0b" />
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Segundo Tiempo (2MT)</h3>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Pronóstico</p>
+              <p style={{ fontSize: '1.5rem', fontWeight: '700', color: getResultColor(mt2Data.pronostico) }}>
+                {getResultText(mt2Data.pronostico)}
+              </p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Doble Oportunidad</p>
+              <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)' }}>{mt2Data.doble_oportunidad}</p>
+            </div>
+            <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Ambos Marcan</p>
+              <p style={{ fontSize: '1.5rem', fontWeight: '700', color: mt2Data.ambos_marcan === 'SI' ? '#10b981' : '#ef4444' }}>
+                {mt2Data.ambos_marcan}
+              </p>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Probabilidades</p>
+            <div style={{ display: 'flex', height: '24px', borderRadius: '12px', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
+              <div style={{ width: `${mt2Data.probabilidades?.local || 0}%`, background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'white' }}>
+                {(mt2Data.probabilidades?.local || 0) > 15 ? `${(mt2Data.probabilidades?.local || 0).toFixed(1)}%` : ''}
+              </div>
+              <div style={{ width: `${mt2Data.probabilidades?.empate || 0}%`, background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'white' }}>
+                {(mt2Data.probabilidades?.empate || 0) > 15 ? `${(mt2Data.probabilidades?.empate || 0).toFixed(1)}%` : ''}
+              </div>
+              <div style={{ width: `${mt2Data.probabilidades?.visita || 0}%`, background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '600', color: 'white' }}>
+                {(mt2Data.probabilidades?.visita || 0) > 15 ? `${(mt2Data.probabilidades?.visita || 0).toFixed(1)}%` : ''}
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              <span>{(mt2Data.probabilidades?.local || 0).toFixed(1)}% Local</span>
+              <span>{(mt2Data.probabilidades?.empate || 0).toFixed(1)}% Empate</span>
+              <span>{(mt2Data.probabilidades?.visita || 0).toFixed(1)}% Visita</span>
+            </div>
+          </div>
+
+          <div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Confianza: {(mt2Data.confianza || 0).toFixed(1)}%</p>
+            <div style={{ background: 'var(--bg-secondary)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+              <div style={{ width: `${mt2Data.confianza || 0}%`, background: (mt2Data.confianza || 0) > 60 ? '#10b981' : (mt2Data.confianza || 0) > 40 ? '#f59e0b' : '#ef4444', height: '100%' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Footer info - Always rendered */}
+        <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          Versión del algoritmo: {prediction?.version_algoritmo || '-'} | 
+          Generado: {prediction?.fecha_generacion ? new Date(prediction.fecha_generacion).toLocaleString('es-ES') : '-'}
+        </div>
       </div>
     </div>
   );
