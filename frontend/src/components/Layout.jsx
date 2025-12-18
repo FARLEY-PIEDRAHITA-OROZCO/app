@@ -1,7 +1,19 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { BarChart3, Database, Download } from 'lucide-react';
+import { BarChart3, Database, Download, Target, Trophy, Users } from 'lucide-react';
 
 const Layout = () => {
+  const navLinkStyle = ({ isActive }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    padding: '0.75rem 1.5rem',
+    color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+    background: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+    borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
+    textDecoration: 'none',
+    transition: 'all 0.2s'
+  });
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <aside style={{
@@ -10,73 +22,77 @@ const Layout = () => {
         borderRight: '1px solid var(--border)',
         padding: '2rem 0'
       }}>
-        <div style={{ padding: '0 1.5rem', marginBottom: '3rem' }}>
+        <div style={{ padding: '0 1.5rem', marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)' }}>
             ⚽ Football Data
           </h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-            Sistema de Análisis
+            Sistema PLLA 3.0
           </p>
         </div>
         
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <NavLink
-            to="/"
-            data-testid="nav-dashboard"
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              padding: '0.75rem 1.5rem',
-              color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-              background: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-              borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
-              textDecoration: 'none',
-              transition: 'all 0.2s'
-            })}
-          >
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          {/* Sección Principal */}
+          <div style={{ padding: '0.5rem 1.5rem', fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '0.5rem' }}>
+            Principal
+          </div>
+          
+          <NavLink to="/" data-testid="nav-dashboard" style={navLinkStyle}>
             <BarChart3 size={20} />
             <span>Dashboard</span>
           </NavLink>
           
-          <NavLink
-            to="/matches"
-            data-testid="nav-matches"
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              padding: '0.75rem 1.5rem',
-              color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-              background: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-              borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
-              textDecoration: 'none',
-              transition: 'all 0.2s'
-            })}
-          >
+          {/* Sección Pronósticos */}
+          <div style={{ padding: '0.5rem 1.5rem', fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '1rem' }}>
+            Pronósticos
+          </div>
+          
+          <NavLink to="/predictions" data-testid="nav-predictions" style={navLinkStyle}>
+            <Target size={20} />
+            <span>Generar Pronóstico</span>
+          </NavLink>
+          
+          <NavLink to="/classification" data-testid="nav-classification" style={navLinkStyle}>
+            <Trophy size={20} />
+            <span>Clasificación</span>
+          </NavLink>
+          
+          <NavLink to="/teams" data-testid="nav-teams" style={navLinkStyle}>
+            <Users size={20} />
+            <span>Equipos</span>
+          </NavLink>
+          
+          {/* Sección Datos */}
+          <div style={{ padding: '0.5rem 1.5rem', fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '1rem' }}>
+            Datos
+          </div>
+          
+          <NavLink to="/matches" data-testid="nav-matches" style={navLinkStyle}>
             <Database size={20} />
             <span>Partidos</span>
           </NavLink>
           
-          <NavLink
-            to="/scraping"
-            data-testid="nav-scraping"
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              padding: '0.75rem 1.5rem',
-              color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-              background: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-              borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
-              textDecoration: 'none',
-              transition: 'all 0.2s'
-            })}
-          >
+          <NavLink to="/scraping" data-testid="nav-scraping" style={navLinkStyle}>
             <Download size={20} />
             <span>Extracción</span>
           </NavLink>
         </nav>
+        
+        {/* Footer del sidebar */}
+        <div style={{ 
+          position: 'absolute', 
+          bottom: '1.5rem', 
+          left: '1.5rem', 
+          right: '1.5rem',
+          padding: '0.75rem',
+          background: 'var(--bg-card)',
+          borderRadius: '8px',
+          fontSize: '0.75rem',
+          color: 'var(--text-secondary)'
+        }}>
+          <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Motor PLLA 3.0</div>
+          <div>v1.0.0</div>
+        </div>
       </aside>
       
       <main style={{ flex: 1, padding: '2rem', overflow: 'auto' }}>
