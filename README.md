@@ -1,59 +1,151 @@
 # ⚽ Sistema de Pronósticos Deportivos PLLA 3.0
 
-## Descripción General
+## 📋 Descripción
 
 Sistema completo de análisis y pronósticos de fútbol basado en el modelo Excel PLLA 3.0.
-Convierte la lógica compleja del Excel (526,550+ fórmulas) en una aplicación web moderna
-con backend en Python/FastAPI y frontend en React.
+Convierte la lógica compleja del Excel (526,550+ fórmulas) en una aplicación web moderna.
 
-## Características Principales
+**Stack Tecnológico:**
+- **Backend:** Python 3.11 + FastAPI + Motor (MongoDB async)
+- **Frontend:** React 18 + React Router + Axios
+- **Base de Datos:** MongoDB
 
-### Motor de Pronósticos
-- ✅ **Estadísticas Acumuladas**: Calcula PJ, V, E, D, GF, GC, Pts por equipo
-- ✅ **Tres Dimensiones Temporales**: Tiempo Completo (90min), Primer Tiempo (1MT), Segundo Tiempo (2MT)
-- ✅ **Tres Contextos**: General, Como Local, Como Visitante
-- ✅ **Algoritmo de Decisión**: Probabilidades L/E/V con umbrales configurables
-- ✅ **Doble Oportunidad**: 1X, X2, 12
-- ✅ **Ambos Marcan**: SI/NO
-- ✅ **Validación**: Sistema GANA/PIERDE post-partido
+---
 
-### Interfaz Web
-- ✅ **Dashboard**: Resumen general del sistema
-- ✅ **Pronósticos**: Generación interactiva de pronósticos
-- ✅ **Clasificación**: Tablas de posiciones con selector de tiempo
-- ✅ **Equipos**: Estadísticas detalladas por equipo
-- ✅ **Partidos**: Visualización de datos históricos
-- ✅ **Extracción**: Scraping de datos desde API-Football
+## 🚀 Instalación Local
 
-## Arquitectura
+### Prerrequisitos
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      ARQUITECTURA DEL SISTEMA                      │
-└─────────────────────────────────────────────────────────────┘
+- **Python 3.11+** (recomendado, 3.10 mínimo)
+- **Node.js 18+** y **Yarn**
+- **MongoDB** (local o Atlas)
 
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│    FRONTEND     │     │     BACKEND     │     │    DATABASE     │
-│    (React)      │ ←→←→ │    (FastAPI)    │ ←→←→ │    (MongoDB)    │
-│    Port 3000    │     │    Port 8001    │     │                 │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-        │                       │
-        │         ┌─────────────────────────┐
-        └─────────┤  PREDICTION ENGINE    │
-                  │  (Motor PLLA 3.0)    │
-                  ├─────────────────────────┤
-                  │ • stats_builder.py   │
-                  │ • classification.py  │
-                  │ • prediction_engine  │
-                  │ • validation.py      │
-                  └─────────────────────────┘
+### Paso 1: Clonar el Proyecto
+
+```bash
+git clone <tu-repositorio>
+cd app
 ```
 
-## Estructura del Proyecto
+### Paso 2: Configurar Backend
+
+```bash
+# Ir al directorio backend
+cd backend
+
+# Crear entorno virtual (recomendado)
+python -m venv venv
+
+# Activar entorno virtual
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+```
+
+### Paso 3: Configurar Variables de Entorno (Backend)
+
+Crea o edita el archivo `backend/.env`:
+
+```env
+# MongoDB - Usa tu conexión local o Atlas
+MONGO_URL=mongodb://localhost:27017
+DB_NAME=football_database
+
+# API Football (obtén tu key en https://www.api-football.com/)
+API_FOOTBALL_KEY=tu_api_key_aqui
+```
+
+**Nota:** Si usas MongoDB Atlas, el formato es:
+```env
+MONGO_URL=mongodb+srv://usuario:password@cluster.xxxxx.mongodb.net/?retryWrites=true&w=majority
+```
+
+### Paso 4: Configurar Frontend
+
+```bash
+# Ir al directorio frontend
+cd ../frontend
+
+# Instalar dependencias
+yarn install
+```
+
+### Paso 5: Configurar Variables de Entorno (Frontend)
+
+Crea o edita el archivo `frontend/.env`:
+
+```env
+REACT_APP_BACKEND_URL=http://localhost:8001
+```
+
+---
+
+## ▶️ Ejecución
+
+### Iniciar Backend
+
+```bash
+cd backend
+
+# Activar entorno virtual si no está activo
+# Windows: venv\Scripts\activate
+# Linux/Mac: source venv/bin/activate
+
+# Iniciar servidor (puerto 8001)
+uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+```
+
+### Iniciar Frontend
+
+En otra terminal:
+
+```bash
+cd frontend
+yarn start
+```
+
+La aplicación estará disponible en:
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:8001/api
+- **Documentación API:** http://localhost:8001/docs
+
+---
+
+## 🔧 Primer Uso
+
+### 1. Construir Estadísticas
+
+Antes de generar pronósticos, debes construir las estadísticas:
+
+```bash
+curl -X POST "http://localhost:8001/api/prediction/build-stats" \
+  -H "Content-Type: application/json" \
+  -d '{"liga_id": "SPAIN_LA_LIGA", "temporada": 2023}'
+```
+
+O desde la interfaz web: **Pronósticos > Generar Pronóstico**
+
+### 2. Extraer Datos (Opcional)
+
+Si necesitas datos frescos de la API:
+
+1. Ve a **Datos > Extracción** en la interfaz web
+2. Configura la temporada y límite de ligas
+3. Haz clic en "Iniciar Extracción"
+
+**Nota:** El plan gratuito de API-Football tiene límites de llamadas.
+
+---
+
+## 📁 Estructura del Proyecto
 
 ```
-/app/
-├── README.md                    # Este archivo
+app/
+├── README.md                    # Esta documentación
 ├── backend/
 │   ├── server.py                # Servidor FastAPI principal
 │   ├── requirements.txt         # Dependencias Python
@@ -61,13 +153,8 @@ con backend en Python/FastAPI y frontend en React.
 │   ├── api_football/            # Módulo de extracción de datos
 │   │   ├── api_client.py        # Cliente API-Football
 │   │   ├── data_transformer.py  # Transformación de datos
-│   │   ├── db_manager.py        # Gestor de base de datos
-│   │   └── config.py            # Configuración
+│   │   └── db_manager.py        # Gestor de base de datos
 │   └── prediction_engine/       # Motor de pronósticos PLLA 3.0
-│       ├── __init__.py          # Exportaciones
-│       ├── README.md            # Documentación del motor
-│       ├── PLAN_IMPLEMENTACION.md # Plan técnico detallado
-│       ├── models.py            # Modelos Pydantic
 │       ├── config.py            # Umbrales y configuración
 │       ├── stats_builder.py     # Constructor de estadísticas
 │       ├── classification.py    # Motor de clasificación
@@ -78,10 +165,8 @@ con backend en Python/FastAPI y frontend en React.
     ├── .env                     # Variables de entorno
     └── src/
         ├── App.js               # Componente principal
-        ├── App.css              # Estilos globales
-        ├── components/
-        │   └── Layout.jsx       # Layout con sidebar
-        └── pages/
+        ├── components/          # Componentes reutilizables
+        └── pages/               # Páginas de la aplicación
             ├── Dashboard.jsx    # Página principal
             ├── Predictions.jsx  # Generador de pronósticos
             ├── Classification.jsx # Tabla de posiciones
@@ -90,50 +175,31 @@ con backend en Python/FastAPI y frontend en React.
             └── Scraping.jsx     # Extracción de datos
 ```
 
-## Inicio Rápido
+---
 
-### Prerrequisitos
-- Python 3.11+
-- Node.js 18+
-- MongoDB
+## 🎯 Funcionalidades
 
-### Instalación
+### Motor de Pronósticos
+- ✅ **Pronóstico Principal:** L (Local) / E (Empate) / V (Visitante)
+- ✅ **Doble Oportunidad:** 1X / X2 / 12
+- ✅ **Ambos Marcan:** SI / NO
+- ✅ **Tres Tiempos:** Completo (90min), 1er Tiempo, 2do Tiempo
+- ✅ **Clasificación:** Tablas de posiciones por liga
+- ✅ **Estadísticas:** Por equipo, local y visitante
 
-```bash
-# Backend
-cd /app/backend
-pip install -r requirements.txt
+### Interfaz Web
+- ✅ Dashboard con estadísticas generales
+- ✅ Generador interactivo de pronósticos
+- ✅ Tablas de clasificación con selector de tiempo
+- ✅ Visualización de estadísticas por equipo
+- ✅ Historial de partidos
+- ✅ Módulo de extracción de datos
 
-# Frontend
-cd /app/frontend
-yarn install
-```
+---
 
-### Ejecución
+## 🔌 API Endpoints
 
-```bash
-# Backend (puerto 8001)
-cd /app/backend
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
-
-# Frontend (puerto 3000)
-cd /app/frontend
-yarn start
-```
-
-### Construir Estadísticas (Primer Paso)
-
-Antes de generar pronósticos, ejecutar:
-
-```bash
-curl -X POST "http://localhost:8001/api/prediction/build-stats" \
-  -H "Content-Type: application/json" \
-  -d '{"liga_id": "SPAIN_LA_LIGA", "temporada": 2023}'
-```
-
-## API Endpoints
-
-### Endpoints de Pronósticos
+### Pronósticos
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
@@ -142,22 +208,19 @@ curl -X POST "http://localhost:8001/api/prediction/build-stats" \
 | POST | `/api/prediction/generate` | **Genera pronóstico** |
 | GET | `/api/prediction/team/{nombre}` | Stats de un equipo |
 | POST | `/api/prediction/validate` | Valida pronóstico vs resultado |
-| GET | `/api/prediction/effectiveness` | Métricas de efectividad |
-| GET | `/api/prediction/config` | Configuración del algoritmo |
 | GET | `/api/prediction/teams` | Lista de equipos |
 
-### Endpoints de Datos
+### Datos
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
 | GET | `/api/stats` | Estadísticas generales |
 | GET | `/api/leagues` | Lista de ligas |
 | GET | `/api/matches` | Lista de partidos |
-| POST | `/api/scrape-league` | Extraer datos de una liga |
+| POST | `/api/scrape/start` | Iniciar extracción |
+| GET | `/api/scrape/status` | Estado de extracción |
 
-## Ejemplos de Uso
-
-### Generar Pronóstico
+### Ejemplo: Generar Pronóstico
 
 ```bash
 curl -X POST "http://localhost:8001/api/prediction/generate" \
@@ -175,7 +238,6 @@ curl -X POST "http://localhost:8001/api/prediction/generate" \
 {
   "success": true,
   "pronostico": {
-    "id": "abc123",
     "equipo_local": "Barcelona",
     "equipo_visitante": "Real Madrid",
     "tiempo_completo": {
@@ -183,27 +245,21 @@ curl -X POST "http://localhost:8001/api/prediction/generate" \
       "doble_oportunidad": "1X",
       "ambos_marcan": "SI",
       "probabilidades": {
-        "local": 36.9,
-        "empate": 27.9,
-        "visita": 35.2
+        "local": 36.88,
+        "empate": 27.85,
+        "visita": 35.27
       },
-      "confianza": 42.5
-    },
-    "primer_tiempo": { ... },
-    "segundo_tiempo": { ... }
+      "confianza": 42.54
+    }
   }
 }
 ```
 
-### Obtener Clasificación
+---
 
-```bash
-curl "http://localhost:8001/api/prediction/classification?liga_id=SPAIN_LA_LIGA&temporada=2023&tipo_tiempo=completo"
-```
+## ⚙️ Configuración del Algoritmo
 
-## Configuración del Algoritmo
-
-### Umbrales (config.py)
+### Umbrales (backend/prediction_engine/config.py)
 
 | Parámetro | Valor | Descripción |
 |-----------|-------|-------------|
@@ -213,7 +269,7 @@ curl "http://localhost:8001/api/prediction/classification?liga_id=SPAIN_LA_LIGA&
 | `SUMA_PROB_MIN` | 116% | Mínimo para doble oportunidad "12" |
 | `UMBRAL_AMBOS_MARCAN` | 45% | Umbral para SI/NO |
 
-### Factores de Ajuste
+### Factores de Rendimiento
 
 | Factor | Rendimiento | Descripción |
 |--------|-------------|-------------|
@@ -223,7 +279,9 @@ curl "http://localhost:8001/api/prediction/classification?liga_id=SPAIN_LA_LIGA&
 | 2 | 20-40% | Equipo débil |
 | 1 | < 20% | Equipo muy débil |
 
-## Base de Datos
+---
+
+## 🗄️ Base de Datos
 
 ### Colecciones MongoDB
 
@@ -234,34 +292,63 @@ curl "http://localhost:8001/api/prediction/classification?liga_id=SPAIN_LA_LIGA&
 | `predictions` | Pronósticos generados |
 | `validations` | Validaciones post-partido |
 
-### Esquema de Partido
+---
 
-```json
-{
-  "liga_id": "SPAIN_LA_LIGA",
-  "equipo_local": "Barcelona",
-  "equipo_visitante": "Real Madrid",
-  "fecha": "2023-10-28",
-  "goles_local_TR": 2,
-  "goles_visitante_TR": 1,
-  "goles_local_1MT": 1,
-  "goles_visitante_1MT": 0
-}
+## ❓ Solución de Problemas
+
+### Error: "No module named 'motor'"
+
+Asegúrate de haber instalado todas las dependencias:
+```bash
+cd backend
+pip install -r requirements.txt
 ```
 
-## Documentación Adicional
+### Error: "Connection refused" en MongoDB
 
-- [Motor de Pronósticos](./backend/prediction_engine/README.md)
-- [Plan de Implementación](./backend/prediction_engine/PLAN_IMPLEMENTACION.md)
-- [API de Datos](./docs/API_REFERENCE.md)
+1. Verifica que MongoDB esté corriendo
+2. Revisa la URL en `backend/.env`
+3. Si usas Atlas, verifica que tu IP esté en la whitelist
 
-## Versión
+### Error: "API account suspended"
 
-- **Motor PLLA**: 3.0
-- **Algoritmo**: v1.0.0
-- **API**: v1.0.0
+Tu cuenta de API-Football puede estar suspendida. Verifica en:
+https://dashboard.api-football.com
 
-## Licencia
+### El frontend no conecta con el backend
+
+1. Verifica que `REACT_APP_BACKEND_URL` en `frontend/.env` sea correcto
+2. Asegúrate de que el backend esté corriendo en el puerto 8001
+3. Reinicia el frontend después de cambiar el `.env`
+
+---
+
+## 📊 Arquitectura
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│    FRONTEND     │     │     BACKEND     │     │    DATABASE     │
+│    (React)      │ ←→  │    (FastAPI)    │ ←→  │    (MongoDB)    │
+│    Port 3000    │     │    Port 8001    │     │                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                               │
+                  ┌────────────┴────────────┐
+                  │    PREDICTION ENGINE    │
+                  │    (Motor PLLA 3.0)     │
+                  └─────────────────────────┘
+```
+
+---
+
+## 📝 Versiones
+
+- **Sistema PLLA:** 3.0
+- **Algoritmo:** v1.0.0
+- **API:** v1.0.0
+
+---
+
+## 📄 Licencia
 
 Proyecto privado - PLLA 3.0
 
