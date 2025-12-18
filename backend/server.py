@@ -23,9 +23,29 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# Importar el Motor de Pronósticos
+from prediction_engine import (
+    StatsBuilder,
+    ClassificationEngine,
+    PredictionEngine,
+    ValidationEngine,
+    TipoTiempo,
+    Config as PredictionConfig
+)
+
 # Create the main app
-app = FastAPI(title="Football Data API")
+app = FastAPI(
+    title="Football Prediction API - PLLA 3.0",
+    description="Sistema de Pronósticos Deportivos basado en PLLA 3.0",
+    version="1.0.0"
+)
 api_router = APIRouter(prefix="/api")
+
+# Inicializar motores de pronósticos
+stats_builder = StatsBuilder(db)
+classification_engine = ClassificationEngine(db)
+prediction_engine = PredictionEngine(db)
+validation_engine = ValidationEngine(db)
 
 # Global variable to track scraping status
 scraping_status = {
