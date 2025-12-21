@@ -26,6 +26,93 @@ class DataTransformer:
         return f"{country_normalized}_{league_normalized}"
     
     @staticmethod
+    def generate_season_id(liga_id: str, season_year: int) -> str:
+        """Genera un ID de temporada estructurado.
+        
+        Args:
+            liga_id: ID de la liga transformado
+            season_year: Año de inicio de la temporada
+            
+        Returns:
+            ID de temporada (ej: SPAIN_LA_LIGA_2023-24)
+        """
+        # Las temporadas futbolísticas van de agosto a mayo
+        # Formato: LIGA_YYYY-YY
+        next_year = (season_year + 1) % 100  # Solo últimos 2 dígitos
+        return f"{liga_id}_{season_year}-{next_year:02d}"
+    
+    @staticmethod
+    def generate_match_id(
+        liga_id: str,
+        season_year: int,
+        ronda: str,
+        equipo_local: str,
+        equipo_visitante: str,
+        fecha: str
+    ) -> str:
+        """Genera un ID único para el partido.
+        
+        Args:
+            liga_id: ID de la liga
+            season_year: Año de la temporada
+            ronda: Ronda/jornada del partido
+            equipo_local: Nombre del equipo local
+            equipo_visitante: Nombre del equipo visitante
+            fecha: Fecha del partido
+            
+        Returns:
+            ID único del partido
+        """
+        # Normalizar nombres de equipos (primeras 3 letras)
+        local_code = normalize_string(equipo_local)[:3].upper()
+        visit_code = normalize_string(equipo_visitante)[:3].upper()
+        
+        # Extraer número de jornada si existe
+        jornada = ""
+        if ronda:
+            # Intentar extraer número de la ronda
+            import re
+            match = re.search(r'(\d+)', ronda)
+            if match:
+                jornada = f"J{match.group(1)}"
+            else:
+                jornada = normalize_string(ronda)[:10]
+        
+        # Formato: LIGA_SEASON_JORNADA_LOCAL-VISIT_FECHA
+        season_id = DataTransformer.generate_season_id(liga_id, season_year)
+        fecha_short = fecha.replace("-", "") if fecha else ""
+        
+        return f"{season_id}_{jornada}_{local_code}-{visit_code}_{fecha_short}"
+    
+    @staticmethod
+    def infer_season_from_date(fecha: str, season_hint: int = None) -> int:
+        """Infiere el año de inicio de temporada basándose en la fecha.
+        
+        Las temporadas europeas generalmente van de agosto a mayo.
+        
+        Args:
+            fecha: Fecha del partido (YYYY-MM-DD)
+            season_hint: Año sugerido por la API
+            
+        Returns:
+            Año de inicio de la temporada
+        """
+        if not fecha:
+            return season_hint or 2023
+        
+        try:
+            fecha_dt = datetime.strptime(fecha, "%Y-%m-%d")
+            
+            # Si el mes es >= 8 (agosto), es el inicio de temporada
+            # Si el mes es < 8, pertenece a la temporada del año anterior
+            if fecha_dt.month >= 8:
+                return fecha_dt.year
+            else:
+                return fecha_dt.year - 1
+        except:
+            return season_hint or 2023
+    
+    @staticmethod
     def extract_match_data(
         fixture: Dict,
         league_info: Dict,
@@ -97,33 +184,67 @@ class DataTransformer:
             league_name = league_info.get('league', {}).get('name', 'UNKNOWN')
             liga_id_transformed = DataTransformer.transform_league_id(country, league_name)
             
+            # Obtener datos de temporada
+            api_season = league.get('season', 2023)
+            ronda = league.get('round', '')
+            equipo_local_nombre = home_team.get('name', '')
+            equipo_visitante_nombre = away_team.get('name', '')
+            
+            # Inferir temporada correcta basándose en fecha
+            season_year = DataTransformer.infer_season_from_date(fecha, api_season)
+            
+            # Generar IDs estructurados
+            season_id = DataTransformer.generate_season_id(liga_id_transformed, season_year)
+            match_id = DataTransformer.generate_match_id(
+                liga_id_transformed,
+                season_year,
+                ronda,
+                equipo_local_nombre,
+                equipo_visitante_nombre,
+                fecha
+            )
+            
             # Construir el documento final
             match_data = {
-                # Datos originales requeridos
-                'equipo_local': home_team.get('name', ''),
-                'equipo_visitante': away_team.get('name', ''),
+                # === NUEVOS CAMPOS DE IDENTIFICACIÓN ===
+                'match_id': match_id,                    # ID interno único
+                'season_id': season_id,                  # ID de temporada estructurado
+                'external_match_id': fixture_data.get('id'),  # ID de la API externa
+                
+                # === CAMPOS LEGACY (mantener para compatibilidad) ===
+                'id_partido': fixture_data.get('id'),    # DEPRECADO - usar external_match_id
+                'season': api_season,                    # DEPRECADO - usar season_id
+                
+                # === DATOS DEL PARTIDO ===
+                'equipo_local': equipo_local_nombre,
+                'equipo_visitante': equipo_visitante_nombre,
                 'estado_del_partido': fixture_data.get('status', {}).get('long', ''),
                 'fecha': fecha,
+                'hora': hora,
+                'ronda': ronda,
+                
+                # === GOLES ===
                 'goles_local_1MT': goles_local_1mt,
                 'goles_local_TR': goles_local_tr,
                 'goles_visitante_1MT': goles_visitante_1mt,
                 'goles_visitante_TR': goles_visitante_tr,
-                'hora': hora,
+                
+                # === IDS DE EQUIPOS ===
                 'id_equipo_local': home_team_id,
                 'id_equipo_visitante': away_team_id,
-                'id_partido': fixture_data.get('id'),
+                
+                # === LIGA ===
                 'liga_id': liga_id_transformed,
                 'liga_nombre': league_name,
-                'ronda': league.get('round', ''),
+                'api_league_id': league_info.get('league', {}).get('id'),
                 
-                # Campos adicionales para el formato de salida
+                # === CLASIFICACIÓN ===
                 'pos_clasif_local': home_position,
                 'pos_clasif_visita': away_position,
                 
-                # Metadatos
+                # === METADATA ===
                 'created_at': datetime.utcnow().isoformat(),
-                'api_league_id': league_info.get('league', {}).get('id'),
-                'season': league.get('season')
+                'updated_at': datetime.utcnow().isoformat()
             }
             
             return match_data

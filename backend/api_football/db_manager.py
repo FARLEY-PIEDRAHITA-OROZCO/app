@@ -1,8 +1,9 @@
 """Gestor de base de datos MongoDB."""
-from pymongo import MongoClient, ASCENDING
+from pymongo import MongoClient, ASCENDING, DESCENDING
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from typing import List, Dict, Any, Optional
-from .config import MONGO_URL, DB_NAME, COLLECTION_NAME
+from datetime import datetime
+from .config import MONGO_URL, DB_NAME, COLLECTION_NAME, SEASONS_COLLECTION
 from .utils import setup_logger
 
 logger = setup_logger(__name__)
@@ -31,6 +32,7 @@ class DatabaseManager:
         self.client: Optional[MongoClient] = None
         self.db = None
         self.collection = None
+        self.seasons_collection = None
         
         logger.info(f"DatabaseManager inicializado para BD: {self.db_name}")
     
@@ -48,6 +50,7 @@ class DatabaseManager:
             
             self.db = self.client[self.db_name]
             self.collection = self.db[self.collection_name]
+            self.seasons_collection = self.db[SEASONS_COLLECTION]
             
             logger.info(f"Conexión exitosa a MongoDB: {self.db_name}.{self.collection_name}")
             
@@ -61,16 +64,41 @@ class DatabaseManager:
             return False
     
     def _create_indexes(self):
-        """Crea índices necesarios en la colección."""
+        """Crea índices necesarios en las colecciones."""
         try:
-            # Índice único para id_partido (evitar duplicados)
+            # ============================================
+            # ÍNDICES PARA football_matches
+            # ============================================
+            
+            # Índice único para match_id (nuevo identificador principal)
+            self.collection.create_index(
+                [('match_id', ASCENDING)],
+                unique=True,
+                sparse=True,  # Permitir documentos sin match_id (legacy)
+                name='idx_match_id'
+            )
+            
+            # Índice único para id_partido (legacy, mantener para compatibilidad)
             self.collection.create_index(
                 [('id_partido', ASCENDING)],
                 unique=True,
                 name='idx_id_partido'
             )
             
-            # Índice compuesto para consultas por liga y fecha
+            # Índice para season_id (nuevo)
+            self.collection.create_index(
+                [('season_id', ASCENDING)],
+                sparse=True,
+                name='idx_season_id'
+            )
+            
+            # Índice compuesto para consultas por liga, temporada y fecha
+            self.collection.create_index(
+                [('season_id', ASCENDING), ('liga_id', ASCENDING), ('fecha', ASCENDING)],
+                name='idx_season_liga_fecha'
+            )
+            
+            # Índice compuesto legacy para consultas por liga y fecha
             self.collection.create_index(
                 [('liga_id', ASCENDING), ('fecha', ASCENDING)],
                 name='idx_liga_fecha'
@@ -85,6 +113,21 @@ class DatabaseManager:
             self.collection.create_index(
                 [('id_equipo_visitante', ASCENDING)],
                 name='idx_equipo_visitante'
+            )
+            
+            # ============================================
+            # ÍNDICES PARA seasons
+            # ============================================
+            
+            self.seasons_collection.create_index(
+                [('season_id', ASCENDING)],
+                unique=True,
+                name='idx_seasons_season_id'
+            )
+            
+            self.seasons_collection.create_index(
+                [('liga_id', ASCENDING), ('year', DESCENDING)],
+                name='idx_seasons_liga_year'
             )
             
             logger.info("Índices creados correctamente")
@@ -106,11 +149,46 @@ class DatabaseManager:
             return True
             
         except DuplicateKeyError:
-            logger.debug(f"Partido {match_data.get('id_partido')} ya existe")
-            return False
+            # Intentar actualizar si ya existe
+            match_id = match_data.get('match_id') or match_data.get('id_partido')
+            logger.debug(f"Partido {match_id} ya existe, actualizando...")
+            return self._update_existing_match(match_data)
             
         except PyMongoError as e:
             logger.error(f"Error insertando partido: {str(e)}")
+            return False
+    
+    def _update_existing_match(self, match_data: Dict[str, Any]) -> bool:
+        """Actualiza un partido existente con nuevos campos.
+        
+        Args:
+            match_data: Datos del partido
+            
+        Returns:
+            True si se actualizó correctamente
+        """
+        try:
+            # Buscar por match_id o id_partido
+            query = {}
+            if match_data.get('match_id'):
+                query['match_id'] = match_data['match_id']
+            elif match_data.get('id_partido'):
+                query['id_partido'] = match_data['id_partido']
+            else:
+                return False
+            
+            # Actualizar campos, incluyendo nuevos season_id y match_id
+            match_data['updated_at'] = datetime.utcnow().isoformat()
+            
+            result = self.collection.update_one(
+                query,
+                {'$set': match_data}
+            )
+            
+            return result.modified_count > 0 or result.matched_count > 0
+            
+        except PyMongoError as e:
+            logger.error(f"Error actualizando partido: {str(e)}")
             return False
     
     def insert_many_matches(self, matches_data: List[Dict[str, Any]]) -> Dict[str, int]:
@@ -124,6 +202,7 @@ class DatabaseManager:
         """
         stats = {
             'insertados': 0,
+            'actualizados': 0,
             'duplicados': 0,
             'errores': 0
         }
@@ -134,7 +213,11 @@ class DatabaseManager:
                 stats['insertados'] += 1
                 
             except DuplicateKeyError:
-                stats['duplicados'] += 1
+                # Actualizar partido existente con nuevos campos
+                if self._update_existing_match(match_data):
+                    stats['actualizados'] += 1
+                else:
+                    stats['duplicados'] += 1
                 
             except PyMongoError as e:
                 logger.error(f"Error insertando partido: {str(e)}")
@@ -143,11 +226,50 @@ class DatabaseManager:
         logger.info(
             f"Inserción completada - "
             f"Insertados: {stats['insertados']}, "
+            f"Actualizados: {stats['actualizados']}, "
             f"Duplicados: {stats['duplicados']}, "
             f"Errores: {stats['errores']}"
         )
         
         return stats
+    
+    def upsert_season(self, season_data: Dict[str, Any]) -> bool:
+        """Inserta o actualiza una temporada.
+        
+        Args:
+            season_data: Datos de la temporada
+            
+        Returns:
+            True si se guardó correctamente
+        """
+        try:
+            result = self.seasons_collection.update_one(
+                {'season_id': season_data['season_id']},
+                {'$set': season_data},
+                upsert=True
+            )
+            return True
+        except PyMongoError as e:
+            logger.error(f"Error guardando temporada: {str(e)}")
+            return False
+    
+    def get_seasons_by_league(self, liga_id: str) -> List[Dict[str, Any]]:
+        """Obtiene las temporadas de una liga.
+        
+        Args:
+            liga_id: ID de la liga
+            
+        Returns:
+            Lista de temporadas ordenadas por año descendente
+        """
+        try:
+            return list(self.seasons_collection.find(
+                {'liga_id': liga_id},
+                {'_id': 0}
+            ).sort('year', DESCENDING))
+        except PyMongoError as e:
+            logger.error(f"Error obteniendo temporadas: {str(e)}")
+            return []
     
     def update_match(self, match_id: int, update_data: Dict[str, Any]) -> bool:
         """Actualiza un partido existente.
@@ -190,6 +312,31 @@ class DatabaseManager:
         except PyMongoError as e:
             logger.error(f"Error obteniendo partido: {str(e)}")
             return None
+    
+    def get_matches_by_season(self, season_id: str, limit: int = 0) -> List[Dict[str, Any]]:
+        """Obtiene partidos de una temporada específica.
+        
+        Args:
+            season_id: ID de la temporada
+            limit: Límite de resultados (0 = sin límite)
+            
+        Returns:
+            Lista de partidos
+        """
+        try:
+            cursor = self.collection.find(
+                {'season_id': season_id},
+                {'_id': 0}
+            ).sort('fecha', ASCENDING)
+            
+            if limit > 0:
+                cursor = cursor.limit(limit)
+            
+            return list(cursor)
+            
+        except PyMongoError as e:
+            logger.error(f"Error obteniendo partidos: {str(e)}")
+            return []
     
     def get_matches_by_league(self, liga_id: str, limit: int = 0) -> List[Dict[str, Any]]:
         """Obtiene partidos de una liga específica.
@@ -249,10 +396,22 @@ class DatabaseManager:
             
             leagues_stats = list(self.collection.aggregate(leagues_pipeline))
             
+            # Contar partidos por temporada
+            seasons_pipeline = [
+                {'$group': {
+                    '_id': '$season_id',
+                    'count': {'$sum': 1}
+                }},
+                {'$sort': {'_id': -1}}
+            ]
+            
+            seasons_stats = list(self.collection.aggregate(seasons_pipeline))
+            
             return {
                 'total_partidos': total_matches,
                 'total_ligas': len(leagues_stats),
-                'partidos_por_liga': leagues_stats[:10]  # Top 10
+                'partidos_por_liga': leagues_stats[:10],  # Top 10
+                'partidos_por_temporada': seasons_stats[:10]  # Top 10
             }
             
         except PyMongoError as e:

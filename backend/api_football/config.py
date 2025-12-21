@@ -15,6 +15,8 @@ API_FOOTBALL_BASE_URL = 'https://v3.football.api-sports.io'
 MONGO_URL = os.getenv('MONGO_URL', 'mongodb://localhost:27017')
 DB_NAME = os.getenv('DB_NAME', 'test_database')
 COLLECTION_NAME = 'football_matches'
+SEASONS_COLLECTION = 'seasons'
+STATS_COLLECTION = 'team_statistics'
 
 # Configuración de la API
 API_TIMEOUT = 30  # segundos
