@@ -10,6 +10,10 @@ las estadísticas acumuladas por equipo, separadas por:
 - Contexto: General, Local, Visitante
 - Tiempo: Completo (90 min), Primer Tiempo, Segundo Tiempo
 
+Actualización v1.1.0:
+- Soporte para season_id estructurado
+- Fallback de compatibilidad para datos legacy
+
 Flujo de Datos:
 --------------
 Partidos (MongoDB) → StatsBuilder → Estadísticas por Equipo (MongoDB)
@@ -21,6 +25,7 @@ Clases:
 Historial de Cambios:
 --------------------
 - v1.0.0 (Dic 2024): Versión inicial
+- v1.1.0 (Dic 2024): Soporte para season_id
 """
 
 from typing import Dict, List, Optional, Any
@@ -31,6 +36,12 @@ from .models import Equipo, EstadisticasEquipo
 from .config import Config, TipoTiempo, ResultadoEnum
 
 logger = logging.getLogger(__name__)
+
+
+def generate_season_id(liga_id: str, temporada: int) -> str:
+    """Genera un season_id a partir de liga_id y temporada."""
+    next_year = (temporada + 1) % 100
+    return f"{liga_id}_{temporada}-{next_year:02d}"
 
 
 class StatsBuilder:
@@ -49,20 +60,28 @@ class StatsBuilder:
     
     Métodos Públicos:
     ----------------
-    construir_estadisticas(liga_id, temporada)
+    construir_estadisticas(liga_id, temporada, season_id)
         Construye estadísticas para todos los equipos de una liga
     
-    obtener_stats_equipo(nombre, liga_id)
+    obtener_stats_equipo(nombre, liga_id, temporada, season_id)
         Obtiene estadísticas de un equipo específico
     
     Ejemplo de Uso:
     ---------------
     ```python
     builder = StatsBuilder(db)
-    await builder.construir_estadisticas('SPAIN_LA_LIGA', 2023)
     
-    stats = await builder.obtener_stats_equipo('Barcelona', 'SPAIN_LA_LIGA')
-    print(stats.stats_completo.puntos)  # 75
+    # Usando season_id (preferido)
+    await builder.construir_estadisticas(
+        liga_id='SPAIN_LA_LIGA',
+        season_id='SPAIN_LA_LIGA_2023-24'
+    )
+    
+    # O usando temporada (legacy, con fallback)
+    await builder.construir_estadisticas(
+        liga_id='SPAIN_LA_LIGA',
+        temporada=2023
+    )
     ```
     """
     
@@ -82,13 +101,14 @@ class StatsBuilder:
     async def construir_estadisticas(
         self,
         liga_id: str,
-        temporada: Optional[int] = None
+        temporada: Optional[int] = None,
+        season_id: Optional[str] = None
     ) -> Dict[str, Equipo]:
         """
         Construye estadísticas para todos los equipos de una liga.
         
         Este método:
-        1. Obtiene todos los partidos de la liga
+        1. Obtiene todos los partidos de la liga/temporada
         2. Procesa cada partido cronológicamente
         3. Acumula estadísticas por equipo
         4. Guarda en la colección team_statistics
@@ -98,7 +118,9 @@ class StatsBuilder:
         liga_id : str
             Identificador de la liga (ej: 'SPAIN_LA_LIGA')
         temporada : int, optional
-            Año de la temporada. Si no se especifica, usa todos los datos.
+            Año de la temporada (legacy). Si no se especifica, usa season_id.
+        season_id : str, optional
+            ID de temporada estructurado (preferido). Ej: 'SPAIN_LA_LIGA_2023-24'
         
         Retorna:
         --------
@@ -115,19 +137,46 @@ class StatsBuilder:
         Ejemplo:
         --------
         ```python
-        equipos = await builder.construir_estadisticas('SPAIN_LA_LIGA', 2023)
-        for nombre, equipo in equipos.items():
-            print(f"{nombre}: {equipo.stats_completo.puntos} pts")
+        # Forma preferida (con season_id)
+        equipos = await builder.construir_estadisticas(
+            liga_id='SPAIN_LA_LIGA',
+            season_id='SPAIN_LA_LIGA_2023-24'
+        )
+        
+        # Forma legacy (con fallback automático)
+        equipos = await builder.construir_estadisticas(
+            liga_id='SPAIN_LA_LIGA',
+            temporada=2023
+        )
         ```
         """
-        logger.info(f"Construyendo estadísticas para {liga_id}, temporada {temporada}")
+        # Determinar season_id efectivo
+        effective_season_id = season_id
+        effective_temporada = temporada or 2023
+        
+        if not effective_season_id and temporada:
+            effective_season_id = generate_season_id(liga_id, temporada)
+        
+        logger.info(f"Construyendo estadísticas para {liga_id}, season_id={effective_season_id}, temporada={temporada}")
         
         # Limpiar cache
         self.equipos_cache = {}
         
-        # Obtener partidos ordenados por fecha
+        # Construir query con fallback para compatibilidad
         query = {"liga_id": liga_id}
-        if temporada:
+        
+        if effective_season_id:
+            # Query que busca por season_id O por season (datos legacy)
+            query["$or"] = [
+                {"season_id": effective_season_id},
+                # Fallback para datos sin season_id
+                {
+                    "season_id": {"$exists": False},
+                    "season": effective_temporada
+                }
+            ]
+        elif temporada:
+            # Solo temporada (legacy puro)
             query["season"] = temporada
         
         partidos = await self.db[Config.COLECCION_PARTIDOS].find(
@@ -135,14 +184,19 @@ class StatsBuilder:
         ).sort("fecha", 1).to_list(None)
         
         if not partidos:
-            logger.warning(f"No hay partidos para {liga_id}")
+            logger.warning(f"No hay partidos para {liga_id}, season_id={effective_season_id}")
             raise ValueError(f"No hay partidos para procesar en {liga_id}")
         
         logger.info(f"Procesando {len(partidos)} partidos")
         
         # Procesar cada partido
         for partido in partidos:
-            await self._procesar_partido(partido, liga_id, temporada or partido.get('season', 2023))
+            await self._procesar_partido(
+                partido, 
+                liga_id, 
+                effective_temporada,
+                effective_season_id
+            )
         
         # Calcular campos derivados para cada equipo
         for equipo in self.equipos_cache.values():
@@ -152,7 +206,7 @@ class StatsBuilder:
             equipo.updated_at = datetime.now(timezone.utc)
         
         # Guardar en base de datos
-        await self._guardar_estadisticas(liga_id, temporada or 2023)
+        await self._guardar_estadisticas(liga_id, effective_temporada, effective_season_id)
         
         logger.info(f"Estadísticas construidas para {len(self.equipos_cache)} equipos")
         return self.equipos_cache
@@ -161,7 +215,8 @@ class StatsBuilder:
         self,
         partido: Dict[str, Any],
         liga_id: str,
-        temporada: int
+        temporada: int,
+        season_id: Optional[str] = None
     ) -> None:
         """
         Procesa un partido y actualiza las estadísticas de ambos equipos.
@@ -174,6 +229,8 @@ class StatsBuilder:
             ID de la liga
         temporada : int
             Año de la temporada
+        season_id : str, optional
+            ID de temporada estructurado
         
         Lógica:
         -------
@@ -186,8 +243,12 @@ class StatsBuilder:
         equipo_visitante_nombre = partido['equipo_visitante']
         
         # Obtener o crear equipos
-        equipo_local = self._obtener_o_crear_equipo(equipo_local_nombre, liga_id, temporada)
-        equipo_visitante = self._obtener_o_crear_equipo(equipo_visitante_nombre, liga_id, temporada)
+        equipo_local = self._obtener_o_crear_equipo(
+            equipo_local_nombre, liga_id, temporada, season_id
+        )
+        equipo_visitante = self._obtener_o_crear_equipo(
+            equipo_visitante_nombre, liga_id, temporada, season_id
+        )
         
         # Extraer goles
         goles_local_tc = partido.get('goles_local_TR', 0)
@@ -231,7 +292,8 @@ class StatsBuilder:
         self,
         nombre: str,
         liga_id: str,
-        temporada: int
+        temporada: int,
+        season_id: Optional[str] = None
     ) -> Equipo:
         """
         Obtiene un equipo del cache o lo crea si no existe.
@@ -244,6 +306,8 @@ class StatsBuilder:
             ID de la liga
         temporada : int
             Año de la temporada
+        season_id : str, optional
+            ID de temporada estructurado
         
         Retorna:
         --------
@@ -256,7 +320,8 @@ class StatsBuilder:
             self.equipos_cache[clave] = Equipo(
                 nombre=nombre,
                 liga_id=liga_id,
-                temporada=temporada
+                temporada=temporada,
+                season_id=season_id
             )
         
         return self.equipos_cache[clave]
@@ -364,7 +429,8 @@ class StatsBuilder:
     async def _guardar_estadisticas(
         self,
         liga_id: str,
-        temporada: int
+        temporada: int,
+        season_id: Optional[str] = None
     ) -> None:
         """
         Guarda las estadísticas en MongoDB.
@@ -377,6 +443,8 @@ class StatsBuilder:
             ID de la liga
         temporada : int
             Año de la temporada
+        season_id : str, optional
+            ID de temporada estructurado
         """
         collection = self.db[Config.COLECCION_ESTADISTICAS]
         
@@ -384,13 +452,21 @@ class StatsBuilder:
             # Convertir a dict para MongoDB
             equipo_dict = equipo.model_dump()
             
+            # Construir query de upsert
+            upsert_query = {
+                "nombre": equipo.nombre,
+                "liga_id": liga_id,
+            }
+            
+            # Preferir season_id si existe
+            if season_id:
+                upsert_query["season_id"] = season_id
+            else:
+                upsert_query["temporada"] = temporada
+            
             # Upsert: actualizar si existe, crear si no
             await collection.update_one(
-                {
-                    "nombre": equipo.nombre,
-                    "liga_id": liga_id,
-                    "temporada": temporada
-                },
+                upsert_query,
                 {"$set": equipo_dict},
                 upsert=True
             )
@@ -401,7 +477,8 @@ class StatsBuilder:
         self,
         nombre: str,
         liga_id: str,
-        temporada: Optional[int] = None
+        temporada: Optional[int] = None,
+        season_id: Optional[str] = None
     ) -> Optional[Equipo]:
         """
         Obtiene las estadísticas de un equipo específico.
@@ -415,7 +492,9 @@ class StatsBuilder:
         liga_id : str
             ID de la liga
         temporada : int, optional
-            Año de la temporada
+            Año de la temporada (legacy)
+        season_id : str, optional
+            ID de temporada estructurado (preferido)
         
         Retorna:
         --------
@@ -425,10 +504,19 @@ class StatsBuilder:
         Ejemplo:
         --------
         ```python
-        stats = await builder.obtener_stats_equipo('Barcelona', 'SPAIN_LA_LIGA', 2023)
-        if stats:
-            print(f"Puntos: {stats.stats_completo.puntos}")
-            print(f"Rendimiento local: {stats.stats_completo.rendimiento_local}%")
+        # Forma preferida
+        stats = await builder.obtener_stats_equipo(
+            'Barcelona', 
+            'SPAIN_LA_LIGA',
+            season_id='SPAIN_LA_LIGA_2023-24'
+        )
+        
+        # Forma legacy (con fallback)
+        stats = await builder.obtener_stats_equipo(
+            'Barcelona', 
+            'SPAIN_LA_LIGA', 
+            temporada=2023
+        )
         ```
         """
         # Buscar en cache primero
@@ -436,12 +524,27 @@ class StatsBuilder:
         if clave in self.equipos_cache:
             return self.equipos_cache[clave]
         
-        # Buscar en base de datos
+        # Determinar season_id efectivo
+        effective_season_id = season_id
+        if not effective_season_id and temporada:
+            effective_season_id = generate_season_id(liga_id, temporada)
+        
+        # Construir query con fallback para compatibilidad
         query = {
             "nombre": nombre,
             "liga_id": liga_id
         }
-        if temporada:
+        
+        if effective_season_id:
+            # Buscar por season_id O por temporada (legacy)
+            query["$or"] = [
+                {"season_id": effective_season_id},
+                {
+                    "season_id": {"$exists": False},
+                    "temporada": temporada or int(effective_season_id.split('_')[-1].split('-')[0])
+                }
+            ]
+        elif temporada:
             query["temporada"] = temporada
         
         doc = await self.db[Config.COLECCION_ESTADISTICAS].find_one(query)
@@ -458,7 +561,8 @@ class StatsBuilder:
     async def obtener_todos_equipos(
         self,
         liga_id: str,
-        temporada: Optional[int] = None
+        temporada: Optional[int] = None,
+        season_id: Optional[str] = None
     ) -> List[Equipo]:
         """
         Obtiene todos los equipos de una liga.
@@ -468,15 +572,32 @@ class StatsBuilder:
         liga_id : str
             ID de la liga
         temporada : int, optional
-            Año de la temporada
+            Año de la temporada (legacy)
+        season_id : str, optional
+            ID de temporada estructurado (preferido)
         
         Retorna:
         --------
         List[Equipo]
             Lista de equipos con estadísticas
         """
+        # Determinar season_id efectivo
+        effective_season_id = season_id
+        if not effective_season_id and temporada:
+            effective_season_id = generate_season_id(liga_id, temporada)
+        
+        # Construir query
         query = {"liga_id": liga_id}
-        if temporada:
+        
+        if effective_season_id:
+            query["$or"] = [
+                {"season_id": effective_season_id},
+                {
+                    "season_id": {"$exists": False},
+                    "temporada": temporada or int(effective_season_id.split('_')[-1].split('-')[0])
+                }
+            ]
+        elif temporada:
             query["temporada"] = temporada
         
         cursor = self.db[Config.COLECCION_ESTADISTICAS].find(query)
