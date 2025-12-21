@@ -201,6 +201,10 @@ class Equipo(BaseModelConfig):
     nombre: str = Field(..., min_length=1, description="Nombre del equipo")
     liga_id: str = Field(..., description="ID de la liga")
     temporada: int = Field(..., ge=1900, le=2100, description="Año de temporada")
+    season_id: Optional[str] = Field(
+        default=None, 
+        description="ID de temporada estructurado (ej: SPAIN_LA_LIGA_2023-24)"
+    )
     
     # Estadísticas por tiempo
     stats_completo: EstadisticasEquipo = Field(
