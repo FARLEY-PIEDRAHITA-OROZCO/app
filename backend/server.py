@@ -586,12 +586,33 @@ async def generate_prediction(request: PronosticoRequest):
     Usa season_id para obtener estadísticas de la temporada correcta.
     """
     try:
+        # Inferir liga_id y temporada de season_id si no se proporcionan
+        effective_liga_id = request.liga_id
+        effective_temporada = request.temporada
+        
+        if request.season_id:
+            parts = request.season_id.rsplit('_', 1)
+            if len(parts) == 2:
+                if not effective_liga_id:
+                    effective_liga_id = parts[0]
+                try:
+                    if not effective_temporada:
+                        effective_temporada = int(parts[1].split('-')[0])
+                except ValueError:
+                    pass
+        
+        # Valores por defecto solo si no se puede inferir nada
+        if not effective_liga_id:
+            effective_liga_id = "SPAIN_LA_LIGA"
+        if not effective_temporada:
+            effective_temporada = 2023
+        
         pronostico = await prediction_engine.generar_pronostico(
             equipo_local=request.equipo_local,
             equipo_visitante=request.equipo_visitante,
-            liga_id=request.liga_id,
-            temporada=request.temporada,
-            season_id=request.season_id  # ← AHORA PASAMOS season_id
+            liga_id=effective_liga_id,
+            temporada=effective_temporada,
+            season_id=request.season_id
         )
         
         return {
