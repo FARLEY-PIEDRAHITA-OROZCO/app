@@ -459,9 +459,9 @@ metadata:
 
 test_plan:
   current_focus: 
-    - "Multi-league support across all pages"
-    - "LeagueSelector component"
-    - "SeasonSelector dynamic loading based on league"
+    - "New prediction features: Over/Under, forma reciente, goles esperados"
+    - "season_id integration in prediction engine"
+    - "Complete prediction flow validation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
