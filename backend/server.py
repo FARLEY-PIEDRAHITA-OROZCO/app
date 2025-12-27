@@ -665,7 +665,7 @@ async def get_team_stats(
             "nombre": equipo.nombre,
             "liga_id": equipo.liga_id,
             "temporada": equipo.temporada,
-            "season_id": equipo.season_id or f"{liga_id}_{temporada}-{(temporada + 1) % 100:02d}",
+            "season_id": equipo.season_id or f"{effective_liga_id}_{effective_temporada}-{(effective_temporada + 1) % 100:02d}",
             "tiempo_completo": equipo.stats_completo.model_dump(),
             "primer_tiempo": equipo.stats_primer_tiempo.model_dump(),
             "segundo_tiempo": equipo.stats_segundo_tiempo.model_dump()
