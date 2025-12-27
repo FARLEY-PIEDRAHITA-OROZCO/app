@@ -480,3 +480,34 @@ agent_communication:
       - Compatibilidad hacia atrás preservada
       
       La nueva funcionalidad season_id está completamente implementada y funcional.
+
+  - agent: "main"
+    message: |
+      He completado la integración de season_id en las últimas páginas del frontend:
+      
+      1. **Dashboard actualizado** (/app/frontend/src/pages/Dashboard.jsx):
+         - Añadido toggle Vista Global / Por Temporada
+         - Integrado SeasonSelector para filtrar por temporada
+         - Backend /api/stats actualizado para aceptar ?season_id=
+         - En modo temporada muestra "Partidos por Jornada" en vez de "Top Ligas"
+      
+      2. **Matches ya estaba implementado** (/app/frontend/src/pages/Matches.jsx):
+         - Ya tenía SeasonSelector funcionando correctamente
+         - Filtros por liga, fecha, equipo funcionan
+         - Exportación CSV/JSON con season_id funciona
+      
+      3. **Backend actualizado** (/app/backend/server.py):
+         - Endpoint GET /api/stats ahora acepta ?season_id= opcional
+         - Si se pasa season_id, filtra datos y agrupa por jornada
+         - Mantiene compatibilidad hacia atrás sin season_id
+      
+      Screenshots tomados confirman que:
+      - Dashboard Vista Global muestra estadísticas de todas las ligas
+      - Dashboard Por Temporada muestra selector y estadísticas filtradas por 2023-24
+      - Matches muestra tabla de partidos con paginación y filtros funcionando
+      
+      Por favor validar:
+      1. GET /api/stats - Sin parámetros (Vista Global)
+      2. GET /api/stats?season_id=SPAIN_LA_LIGA_2023-24 - Con filtro de temporada
+      3. Frontend Dashboard - Cambio entre Vista Global y Por Temporada
+      4. Frontend Matches - Filtros y paginación funcionando
