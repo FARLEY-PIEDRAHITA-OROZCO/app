@@ -317,15 +317,18 @@ backend:
 
   - task: "Stats endpoint with season_id parameter"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Actualizado endpoint GET /api/stats para aceptar parámetro opcional season_id. Cuando se pasa, filtra datos y agrupa por jornada en vez de por liga."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Stats endpoint funciona perfectamente. Vista Global (sin parámetros): retorna total_matches=380, incluye SPAIN_LA_LIGA en top leagues. Vista Por Temporada (con season_id=SPAIN_LA_LIGA_2023-24): retorna datos filtrados con season_id y season_label=2023-24, muestra 10 jornadas en vez de ligas."
 
   - task: "Matches page with season_id filter"
     implemented: true
