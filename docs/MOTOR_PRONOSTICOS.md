@@ -1,5 +1,7 @@
 # 🎯 Motor de Pronósticos PLLA 3.0 - Documentación Técnica Completa
 
+> **Versión:** 3.0.1 | **Última actualización:** Diciembre 2024
+
 ## Índice
 
 1. [Visión General](#1-visión-general)
@@ -15,6 +17,7 @@
 11. [Métricas de Calidad](#11-métricas-de-calidad)
 12. [Cómo Mejorar el Sistema](#12-cómo-mejorar-el-sistema)
 13. [Umbrales Configurables](#13-umbrales-configurables)
+14. [Sistema de Temporadas (season_id)](#14-sistema-de-temporadas-season_id)
 
 ---
 
