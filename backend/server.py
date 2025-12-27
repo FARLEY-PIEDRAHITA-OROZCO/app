@@ -453,12 +453,12 @@ async def build_statistics(request: ConstruirStatsRequest):
     3. Guarda en la colección `team_statistics`
     
     **Parámetros:**
-    - `liga_id`: ID de la liga
-    - `temporada`: Año (legacy, usar season_id preferiblemente)
-    - `season_id`: ID estructurado de temporada (ej: SPAIN_LA_LIGA_2023-24)
+    - `liga_id`: ID de la liga (opcional, se infiere de season_id)
+    - `temporada`: Año (legacy, se infiere de season_id)
+    - `season_id`: ID estructurado de temporada (ej: SPAIN_LA_LIGA_2023-24) - PREFERIDO
     """
     try:
-        # Si se proporciona season_id, extraer liga_id de él
+        # Inferir liga_id y temporada de season_id si no se proporcionan
         effective_liga_id = request.liga_id
         effective_temporada = request.temporada
         
@@ -466,11 +466,19 @@ async def build_statistics(request: ConstruirStatsRequest):
             # Formato: LIGA_ID_YYYY-YY (ej: ENGLAND_PREMIER_LEAGUE_2022-23)
             parts = request.season_id.rsplit('_', 1)
             if len(parts) == 2:
-                effective_liga_id = parts[0]  # ENGLAND_PREMIER_LEAGUE
+                if not effective_liga_id:
+                    effective_liga_id = parts[0]  # ENGLAND_PREMIER_LEAGUE
                 try:
-                    effective_temporada = int(parts[1].split('-')[0])  # 2022
+                    if not effective_temporada:
+                        effective_temporada = int(parts[1].split('-')[0])  # 2022
                 except ValueError:
                     pass
+        
+        # Valores por defecto solo si no se puede inferir nada
+        if not effective_liga_id:
+            effective_liga_id = "SPAIN_LA_LIGA"
+        if not effective_temporada:
+            effective_temporada = 2023
         
         equipos = await stats_builder.construir_estadisticas(
             liga_id=effective_liga_id,
