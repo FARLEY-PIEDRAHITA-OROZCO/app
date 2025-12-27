@@ -2,6 +2,7 @@
  * Dashboard - Motor PLLA 3.0
  * 
  * Resumen general del sistema con:
+ * - Selector de liga
  * - Selector de temporada (season_id)
  * - Estadísticas globales o por temporada
  * - Top ligas/jornadas
@@ -9,7 +10,8 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { TrendingUp, Trophy, Target, Calendar, BarChart3 } from 'lucide-react';
+import { TrendingUp, Trophy, Target, Calendar, BarChart3, Globe } from 'lucide-react';
+import LeagueSelector from '../components/LeagueSelector';
 import SeasonSelector from '../components/SeasonSelector';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -18,6 +20,7 @@ const API = `${BACKEND_URL}/api`;
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [ligaId, setLigaId] = useState('');
   const [seasonId, setSeasonId] = useState('');
   const [viewMode, setViewMode] = useState('global'); // 'global' | 'season'
 
@@ -38,6 +41,12 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Cuando cambia la liga, resetear la temporada
+  const handleLigaChange = (newLigaId) => {
+    setLigaId(newLigaId);
+    setSeasonId(''); // Reset season when league changes
   };
 
   const statCards = [
@@ -125,13 +134,19 @@ const Dashboard = () => {
             </button>
           </div>
 
-          {/* Selector de Temporada (solo en modo temporada) */}
+          {/* Selectores de Liga y Temporada (solo en modo temporada) */}
           {viewMode === 'season' && (
-            <SeasonSelector 
-              ligaId="SPAIN_LA_LIGA"
-              value={seasonId}
-              onChange={setSeasonId}
-            />
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <LeagueSelector 
+                value={ligaId}
+                onChange={handleLigaChange}
+              />
+              <SeasonSelector 
+                ligaId={ligaId}
+                value={seasonId}
+                onChange={setSeasonId}
+              />
+            </div>
           )}
         </div>
       </div>
@@ -152,6 +167,9 @@ const Dashboard = () => {
               color: 'var(--accent)',
               fontSize: '0.9rem'
             }}>
+              <Globe size={16} />
+              <span>Liga: <strong>{ligaId?.replace(/_/g, ' ')}</strong></span>
+              <span style={{ margin: '0 0.5rem', color: 'var(--text-secondary)' }}>|</span>
               <Calendar size={16} />
               <span>Temporada: <strong>{stats.season_label}</strong></span>
             </div>
