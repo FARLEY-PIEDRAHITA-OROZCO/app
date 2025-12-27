@@ -912,6 +912,56 @@ class PredictionEngineTest:
         self.test_results["leagues_list"] = True
         return True
 
+    def test_18_seasons_by_league(self) -> bool:
+        """Test 18: GET /api/seasons?liga_id=SPAIN_LA_LIGA - Seasons for specific league."""
+        self.log("=== TEST 18: Seasons by League ===")
+        
+        result = self.make_request("GET", "/seasons?liga_id=SPAIN_LA_LIGA")
+        
+        if not result["success"]:
+            self.log("❌ Seasons by league request failed", "ERROR")
+            return False
+            
+        data = result["data"]
+        
+        # Validate structure
+        required_fields = ["total", "seasons"]
+        missing_fields = [f for f in required_fields if f not in data]
+        
+        if missing_fields:
+            self.log(f"❌ Missing fields in seasons by league: {missing_fields}", "ERROR")
+            return False
+            
+        seasons = data["seasons"]
+        if not seasons:
+            self.log("❌ No seasons found for SPAIN_LA_LIGA", "ERROR")
+            return False
+            
+        # Validate season structure
+        first_season = seasons[0]
+        required_season_fields = ["season_id", "liga_id", "year", "total_partidos"]
+        missing_season_fields = [f for f in required_season_fields if f not in first_season]
+        
+        if missing_season_fields:
+            self.log(f"❌ Missing fields in season data: {missing_season_fields}", "ERROR")
+            return False
+            
+        # All seasons should be for SPAIN_LA_LIGA
+        for season in seasons:
+            if season.get("liga_id") != "SPAIN_LA_LIGA":
+                self.log(f"❌ Expected all seasons to be for SPAIN_LA_LIGA, found {season.get('liga_id')}", "ERROR")
+                return False
+                
+        # Check season_id format
+        season_id = first_season["season_id"]
+        if not season_id.startswith("SPAIN_LA_LIGA_"):
+            self.log(f"❌ Expected season_id to start with 'SPAIN_LA_LIGA_', got {season_id}", "ERROR")
+            return False
+            
+        self.log(f"✅ Seasons by league working correctly - found {len(seasons)} seasons for SPAIN_LA_LIGA")
+        self.test_results["seasons_by_league"] = True
+        return True
+
     def test_19_new_plla_features(self) -> bool:
         """Test 19: NEW PLLA 3.0 Features - Over/Under, Goles Esperados, Forma Reciente."""
         self.log("=== TEST 19: NEW PLLA 3.0 FEATURES ===")
