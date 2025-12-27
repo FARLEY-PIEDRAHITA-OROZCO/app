@@ -269,36 +269,104 @@ async def get_scraping_status():
 
 @api_router.post("/export")
 async def export_data(request: ExportRequest):
-    """Exportar datos."""
+    """
+    Exportar datos de partidos.
+    
+    **Parámetros:**
+    - `format`: "csv" o "json"
+    - `liga_id`: Filtrar por liga
+    - `temporada`: Filtrar por año (legacy)
+    - `season_id`: Filtrar por temporada estructurada (preferido)
+    - `limit`: Límite de registros
+    - `include_fields`: Lista de campos a incluir (opcional)
+    """
     try:
         collection = db.football_matches
         query = {}
         
+        # Filtro por liga
         if request.liga_id:
             query["liga_id"] = request.liga_id
         
-        matches = await collection.find(query, {"_id": 0}).limit(request.limit).to_list(request.limit)
+        # Filtro por temporada (preferir season_id)
+        if request.season_id:
+            query["$or"] = [
+                {"season_id": request.season_id},
+                {"season_id": {"$exists": False}, "season": int(request.season_id.split("_")[-1].split("-")[0])}
+            ]
+        elif request.temporada:
+            # Fallback para compatibilidad
+            if request.liga_id:
+                effective_season_id = f"{request.liga_id}_{request.temporada}-{(request.temporada + 1) % 100:02d}"
+                query["$or"] = [
+                    {"season_id": effective_season_id},
+                    {"season_id": {"$exists": False}, "season": request.temporada}
+                ]
+            else:
+                query["season"] = request.temporada
+        
+        # Proyección de campos
+        projection = {"_id": 0}
+        if request.include_fields:
+            projection = {"_id": 0}
+            for field in request.include_fields:
+                projection[field] = 1
+        
+        # Obtener datos
+        cursor = collection.find(query, projection).sort("fecha", 1)
+        if request.limit:
+            cursor = cursor.limit(request.limit)
+        
+        matches = await cursor.to_list(request.limit or 10000)
+        
+        if not matches:
+            raise HTTPException(status_code=404, detail="No hay datos para exportar con los filtros especificados")
         
         if request.format == "json":
-            return matches
+            return {
+                "total": len(matches),
+                "filtros": {
+                    "liga_id": request.liga_id,
+                    "temporada": request.temporada,
+                    "season_id": request.season_id
+                },
+                "datos": matches
+            }
         
         elif request.format == "csv":
-            if not matches:
-                raise HTTPException(status_code=404, detail="No hay datos para exportar")
-            
             # Crear CSV
             output = io.StringIO()
-            writer = csv.DictWriter(output, fieldnames=matches[0].keys())
+            
+            # Usar campos específicos o todos los del primer registro
+            fieldnames = request.include_fields if request.include_fields else list(matches[0].keys())
+            
+            writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
             writer.writeheader()
             writer.writerows(matches)
             
             output.seek(0)
             
+            # Generar nombre de archivo descriptivo
+            filename_parts = ["partidos"]
+            if request.season_id:
+                filename_parts.append(request.season_id.replace("/", "-"))
+            elif request.liga_id:
+                filename_parts.append(request.liga_id)
+            filename_parts.append(datetime.now().strftime('%Y%m%d'))
+            
+            filename = "_".join(filename_parts) + ".csv"
+            
             return StreamingResponse(
                 iter([output.getvalue()]),
                 media_type="text/csv",
-                headers={"Content-Disposition": f"attachment; filename=partidos_{datetime.now().strftime('%Y%m%d')}.csv"}
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
             )
+        
+        else:
+            raise HTTPException(status_code=400, detail=f"Formato '{request.format}' no soportado. Use 'csv' o 'json'")
+            
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error exporting data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
