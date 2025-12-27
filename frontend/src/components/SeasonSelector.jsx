@@ -2,7 +2,7 @@
  * Componente SeasonSelector - Selector de Temporadas
  * 
  * Permite seleccionar la temporada para filtrar datos.
- * Carga las temporadas disponibles desde el backend.
+ * Carga las temporadas disponibles desde el backend según la liga seleccionada.
  */
 
 import { useState, useEffect } from 'react';
@@ -13,7 +13,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const SeasonSelector = ({ 
-  ligaId = 'SPAIN_LA_LIGA',
+  ligaId = '',
   value,
   onChange,
   showLabel = true,
@@ -23,7 +23,12 @@ const SeasonSelector = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSeasons();
+    if (ligaId) {
+      fetchSeasons();
+    } else {
+      setSeasons([]);
+      setLoading(false);
+    }
   }, [ligaId]);
 
   const fetchSeasons = async () => {
@@ -36,18 +41,26 @@ const SeasonSelector = ({
       // Si no hay valor seleccionado y hay temporadas, seleccionar la primera
       if (!value && seasonList.length > 0) {
         onChange(seasonList[0].season_id);
+      } else if (value && seasonList.length > 0) {
+        // Verificar si el valor actual existe en la nueva lista de temporadas
+        const exists = seasonList.some(s => s.season_id === value);
+        if (!exists) {
+          onChange(seasonList[0].season_id);
+        }
       }
     } catch (err) {
       console.error('Error fetching seasons:', err);
-      // Fallback: crear temporada por defecto
-      const defaultSeason = {
-        season_id: `${ligaId}_2023-24`,
-        label: '2023-24',
-        year: 2023
-      };
-      setSeasons([defaultSeason]);
-      if (!value) {
-        onChange(defaultSeason.season_id);
+      // Fallback: crear temporada por defecto basada en la liga
+      if (ligaId) {
+        const defaultSeason = {
+          season_id: `${ligaId}_2023-24`,
+          label: '2023-24',
+          year: 2023
+        };
+        setSeasons([defaultSeason]);
+        if (!value) {
+          onChange(defaultSeason.season_id);
+        }
       }
     } finally {
       setLoading(false);
@@ -74,6 +87,22 @@ const SeasonSelector = ({
     );
   }
 
+  if (!ligaId) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {showLabel && (
+          <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            <Calendar size={14} style={{ marginRight: '0.25rem' }} />
+            Temporada
+          </label>
+        )}
+        <select disabled style={{ opacity: 0.5 }}>
+          <option>Selecciona una liga</option>
+        </select>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
       {showLabel && (
@@ -92,7 +121,7 @@ const SeasonSelector = ({
         value={value || ''}
         onChange={handleChange}
         disabled={disabled || seasons.length === 0}
-        style={{ minWidth: '140px' }}
+        style={{ minWidth: '160px' }}
       >
         {seasons.length === 0 ? (
           <option value="">Sin temporadas</option>
