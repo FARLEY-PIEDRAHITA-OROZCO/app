@@ -333,6 +333,36 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: Stats endpoint funciona perfectamente. Vista Global (sin parámetros): retorna total_matches=380, incluye SPAIN_LA_LIGA en top leagues. Vista Por Temporada (con season_id=SPAIN_LA_LIGA_2023-24): retorna datos filtrados con season_id y season_label=2023-24, muestra 10 jornadas en vez de ligas."
 
+  - task: "Multi-league support - GET /api/leagues"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementado endpoint GET /api/leagues para obtener lista de ligas disponibles con nombre y total de partidos. Soporta funcionalidad multi-liga."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Endpoint /api/leagues funciona correctamente. Retorna lista de ligas con estructura {_id, liga_nombre, total_partidos}. SPAIN_LA_LIGA presente con 380 partidos como esperado. Soporta múltiples ligas cuando estén disponibles."
+
+  - task: "Dynamic seasons by league - GET /api/seasons?liga_id="
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Actualizado endpoint GET /api/seasons para aceptar parámetro liga_id y filtrar temporadas por liga específica. Permite carga dinámica de temporadas según liga seleccionada."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Endpoint /api/seasons?liga_id=SPAIN_LA_LIGA funciona correctamente. Retorna temporadas filtradas por liga con estructura {total, seasons}. Cada temporada incluye season_id, liga_id, year, total_partidos. Formato season_id correcto: SPAIN_LA_LIGA_2023-24."
+
   - task: "Matches page with season_id filter"
     implemented: true
     working: true
