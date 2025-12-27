@@ -392,15 +392,17 @@ async def build_statistics(request: ConstruirStatsRequest):
 async def get_classification(
     liga_id: str = "SPAIN_LA_LIGA",
     temporada: int = 2023,
-    tipo_tiempo: str = "completo"
+    tipo_tiempo: str = "completo",
+    season_id: Optional[str] = None
 ):
     """
     Obtiene la tabla de clasificación.
     
     **Parámetros:**
     - `liga_id`: ID de la liga
-    - `temporada`: Año de la temporada
+    - `temporada`: Año de la temporada (legacy)
     - `tipo_tiempo`: "completo", "primer_tiempo" o "segundo_tiempo"
+    - `season_id`: ID estructurado de temporada (preferido)
     
     **Retorna:**
     - Tabla de posiciones ordenada por puntos
@@ -417,10 +419,19 @@ async def get_classification(
         tabla = await classification_engine.generar_clasificacion(
             liga_id=liga_id,
             temporada=temporada,
-            tipo_tiempo=tipo
+            tipo_tiempo=tipo,
+            season_id=season_id
         )
         
-        return classification_engine.tabla_to_dict(tabla)
+        result = classification_engine.tabla_to_dict(tabla)
+        
+        # Agregar season_id a la respuesta
+        if season_id:
+            result['season_id'] = season_id
+        elif temporada:
+            result['season_id'] = f"{liga_id}_{temporada}-{(temporada + 1) % 100:02d}"
+        
+        return result
     
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
