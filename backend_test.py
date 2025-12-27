@@ -688,7 +688,14 @@ class PredictionEngineTest:
             self.test_5_validate_prediction,
             self.test_6_effectiveness,
             self.test_7_config,
-            self.test_8_teams_list
+            self.test_8_teams_list,
+            # New season_id functionality tests
+            self.test_9_seasons_list,
+            self.test_10_season_detail,
+            self.test_11_classification_with_season_id,
+            self.test_12_teams_with_season_id,
+            self.test_13_prediction_with_season_id,
+            self.test_14_backward_compatibility
         ]
         
         passed = 0
