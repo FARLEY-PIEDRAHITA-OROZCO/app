@@ -663,6 +663,156 @@ async def list_teams(
         logging.error(f"Error listando equipos: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ============================================
+# ENDPOINTS DE TEMPORADAS (SEASONS)
+# ============================================
+
+@api_router.get("/seasons")
+async def list_seasons(liga_id: Optional[str] = None):
+    """
+    Lista todas las temporadas disponibles.
+    
+    **Parámetros:**
+    - `liga_id`: Filtrar por liga específica (opcional)
+    
+    **Retorna:**
+    - Lista de temporadas con información básica
+    """
+    try:
+        query = {}
+        if liga_id:
+            query["liga_id"] = liga_id
+        
+        seasons = await db.seasons.find(
+            query,
+            {"_id": 0}
+        ).sort([("year", -1), ("liga_id", 1)]).to_list(100)
+        
+        # Si no hay temporadas en la colección seasons, inferir de partidos
+        if not seasons:
+            pipeline = [
+                {"$match": query} if liga_id else {"$match": {}},
+                {"$group": {
+                    "_id": {
+                        "liga_id": "$liga_id",
+                        "season": {"$ifNull": ["$season", 2023]}
+                    },
+                    "total_partidos": {"$sum": 1},
+                    "fecha_min": {"$min": "$fecha"},
+                    "fecha_max": {"$max": "$fecha"}
+                }},
+                {"$sort": {"_id.season": -1}}
+            ]
+            
+            agg_result = await db.football_matches.aggregate(pipeline).to_list(100)
+            
+            seasons = []
+            for r in agg_result:
+                liga = r["_id"]["liga_id"]
+                year = r["_id"]["season"]
+                seasons.append({
+                    "season_id": f"{liga}_{year}-{(year + 1) % 100:02d}",
+                    "liga_id": liga,
+                    "year": year,
+                    "label": f"{year}-{(year + 1) % 100:02d}",
+                    "total_partidos": r["total_partidos"],
+                    "fecha_inicio": r["fecha_min"],
+                    "fecha_fin": r["fecha_max"],
+                    "estado": "inferida"
+                })
+        
+        return {
+            "total": len(seasons),
+            "seasons": seasons
+        }
+    
+    except Exception as e:
+        logging.error(f"Error listando temporadas: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/seasons/{season_id}")
+async def get_season(season_id: str):
+    """
+    Obtiene información detallada de una temporada.
+    
+    **Parámetros:**
+    - `season_id`: ID de la temporada (ej: SPAIN_LA_LIGA_2023-24)
+    
+    **Retorna:**
+    - Información completa de la temporada
+    - Estadísticas de partidos
+    - Lista de equipos
+    """
+    try:
+        # Buscar en colección seasons
+        season = await db.seasons.find_one(
+            {"season_id": season_id},
+            {"_id": 0}
+        )
+        
+        # Si no existe, intentar inferir de partidos
+        if not season:
+            # Parsear season_id para extraer liga y año
+            parts = season_id.rsplit("_", 1)
+            if len(parts) != 2:
+                raise HTTPException(status_code=404, detail=f"Temporada '{season_id}' no encontrada")
+            
+            liga_id = parts[0]
+            year_part = parts[1].split("-")[0]
+            
+            try:
+                year = int(year_part)
+            except:
+                raise HTTPException(status_code=404, detail=f"Temporada '{season_id}' no encontrada")
+            
+            # Buscar partidos
+            query = {"liga_id": liga_id, "season": year}
+            total_partidos = await db.football_matches.count_documents(query)
+            
+            if total_partidos == 0:
+                raise HTTPException(status_code=404, detail=f"Temporada '{season_id}' no encontrada")
+            
+            # Obtener equipos
+            equipos = await db.football_matches.distinct("equipo_local", query)
+            
+            # Obtener rango de fechas
+            partidos = await db.football_matches.find(
+                query,
+                {"fecha": 1}
+            ).sort("fecha", 1).to_list(None)
+            
+            season = {
+                "season_id": season_id,
+                "liga_id": liga_id,
+                "year": year,
+                "label": f"{year}-{(year + 1) % 100:02d}",
+                "total_partidos": total_partidos,
+                "equipos_count": len(equipos),
+                "equipos": equipos,
+                "fecha_inicio": partidos[0]["fecha"] if partidos else None,
+                "fecha_fin": partidos[-1]["fecha"] if partidos else None,
+                "estado": "inferida"
+            }
+        else:
+            # Agregar lista de equipos si no está
+            if "equipos" not in season:
+                equipos = await db.football_matches.distinct(
+                    "equipo_local", 
+                    {"season_id": season_id}
+                )
+                season["equipos"] = equipos
+        
+        return season
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error obteniendo temporada: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Include router
 app.include_router(api_router)
 
