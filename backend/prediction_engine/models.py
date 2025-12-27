@@ -319,6 +319,10 @@ class PronosticoTiempo(BaseModelConfig):
         Factor de ajuste del local (1-5)
     factor_visita : int
         Factor de ajuste del visitante (1-5)
+    over_under : dict
+        Predicciones de Over/Under goles
+    goles_esperados : dict
+        Goles esperados por equipo
     """
     
     pronostico: str = Field(..., description="Resultado: L/E/V")
@@ -328,6 +332,20 @@ class PronosticoTiempo(BaseModelConfig):
     confianza: float = Field(default=0.0, ge=0, le=100, description="% confianza")
     factor_local: int = Field(default=3, ge=1, le=5, description="Factor local")
     factor_visita: int = Field(default=3, ge=1, le=5, description="Factor visita")
+    
+    # Nuevos campos para Over/Under
+    over_under: Dict[str, Any] = Field(
+        default_factory=lambda: {
+            "over_15": {"prediccion": "OVER", "probabilidad": 50.0},
+            "over_25": {"prediccion": "UNDER", "probabilidad": 50.0},
+            "over_35": {"prediccion": "UNDER", "probabilidad": 50.0}
+        },
+        description="Predicciones Over/Under"
+    )
+    goles_esperados: Dict[str, float] = Field(
+        default_factory=lambda: {"local": 0.0, "visitante": 0.0, "total": 0.0},
+        description="Goles esperados"
+    )
 
 
 class Pronostico(BaseModelConfig):
