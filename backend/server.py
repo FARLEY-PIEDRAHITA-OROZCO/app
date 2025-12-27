@@ -478,10 +478,17 @@ async def generate_prediction(request: PronosticoRequest):
 async def get_team_stats(
     nombre: str,
     liga_id: str = "SPAIN_LA_LIGA",
-    temporada: int = 2023
+    temporada: int = 2023,
+    season_id: Optional[str] = None
 ):
     """
     Obtiene las estadísticas de un equipo específico.
+    
+    **Parámetros:**
+    - `nombre`: Nombre del equipo
+    - `liga_id`: ID de la liga
+    - `temporada`: Año (legacy)
+    - `season_id`: ID de temporada estructurado (preferido)
     
     **Retorna:**
     - Estadísticas generales, como local y como visitante
@@ -491,7 +498,8 @@ async def get_team_stats(
         equipo = await stats_builder.obtener_stats_equipo(
             nombre=nombre,
             liga_id=liga_id,
-            temporada=temporada
+            temporada=temporada,
+            season_id=season_id
         )
         
         if not equipo:
@@ -504,6 +512,7 @@ async def get_team_stats(
             "nombre": equipo.nombre,
             "liga_id": equipo.liga_id,
             "temporada": equipo.temporada,
+            "season_id": equipo.season_id or f"{liga_id}_{temporada}-{(temporada + 1) % 100:02d}",
             "tiempo_completo": equipo.stats_completo.model_dump(),
             "primer_tiempo": equipo.stats_primer_tiempo.model_dump(),
             "segundo_tiempo": equipo.stats_segundo_tiempo.model_dump()
