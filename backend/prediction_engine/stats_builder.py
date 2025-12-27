@@ -608,3 +608,151 @@ class StatsBuilder:
             equipos.append(Equipo(**doc))
         
         return equipos
+
+
+    async def obtener_forma_reciente(
+        self,
+        nombre_equipo: str,
+        liga_id: str,
+        season_id: Optional[str] = None,
+        temporada: Optional[int] = None,
+        n_partidos: int = 5
+    ) -> Dict[str, Any]:
+        """
+        Obtiene la forma reciente de un equipo (últimos N partidos).
+        
+        Parámetros:
+        -----------
+        nombre_equipo : str
+            Nombre del equipo
+        liga_id : str
+            ID de la liga
+        season_id : str, optional
+            ID de temporada estructurado
+        temporada : int, optional
+            Año de temporada (legacy)
+        n_partidos : int
+            Número de partidos a considerar (default: 5)
+        
+        Retorna:
+        --------
+        Dict con:
+        - ultimos_5: Lista de resultados (V/E/D)
+        - rendimiento: % de puntos en últimos N partidos
+        - goles_favor_avg: Promedio goles a favor
+        - goles_contra_avg: Promedio goles en contra
+        - racha: Descripción de racha actual
+        """
+        # Determinar season_id efectivo
+        effective_season_id = season_id
+        if not effective_season_id and temporada:
+            effective_season_id = generate_season_id(liga_id, temporada)
+        
+        # Construir query
+        query = {
+            "liga_id": liga_id,
+            "$or": [
+                {"equipo_local": nombre_equipo},
+                {"equipo_visitante": nombre_equipo}
+            ]
+        }
+        
+        if effective_season_id:
+            query["$and"] = [
+                {"$or": query.pop("$or")},
+                {"$or": [
+                    {"season_id": effective_season_id},
+                    {"season_id": {"$exists": False}, "season": temporada or 2023}
+                ]}
+            ]
+        
+        # Obtener últimos N partidos ordenados por fecha descendente
+        partidos = await self.db[Config.COLECCION_PARTIDOS].find(
+            query
+        ).sort("fecha_partido", -1).limit(n_partidos).to_list(n_partidos)
+        
+        if not partidos:
+            return {
+                "ultimos_5": [],
+                "rendimiento": 0.0,
+                "goles_favor_avg": 0.0,
+                "goles_contra_avg": 0.0,
+                "racha": "Sin datos"
+            }
+        
+        # Procesar resultados
+        resultados = []
+        goles_favor_total = 0
+        goles_contra_total = 0
+        puntos_total = 0
+        
+        for partido in partidos:
+            es_local = partido.get('equipo_local') == nombre_equipo
+            
+            if es_local:
+                gf = partido.get('goles_local_TR', 0)
+                gc = partido.get('goles_visitante_TR', 0)
+            else:
+                gf = partido.get('goles_visitante_TR', 0)
+                gc = partido.get('goles_local_TR', 0)
+            
+            goles_favor_total += gf
+            goles_contra_total += gc
+            
+            # Determinar resultado
+            if gf > gc:
+                resultados.append('V')
+                puntos_total += 3
+            elif gf == gc:
+                resultados.append('E')
+                puntos_total += 1
+            else:
+                resultados.append('D')
+        
+        # Calcular racha
+        racha = self._calcular_racha(resultados)
+        
+        # Calcular rendimiento (% de puntos posibles)
+        puntos_posibles = len(partidos) * 3
+        rendimiento = (puntos_total / puntos_posibles * 100) if puntos_posibles > 0 else 0
+        
+        return {
+            "ultimos_5": resultados,
+            "rendimiento": round(rendimiento, 2),
+            "goles_favor_avg": round(goles_favor_total / len(partidos), 2) if partidos else 0,
+            "goles_contra_avg": round(goles_contra_total / len(partidos), 2) if partidos else 0,
+            "racha": racha
+        }
+    
+    def _calcular_racha(self, resultados: List[str]) -> str:
+        """
+        Calcula la racha actual basada en los últimos resultados.
+        
+        Ejemplo: ['V', 'V', 'V', 'E', 'D'] -> "3 victorias consecutivas"
+        """
+        if not resultados:
+            return "Sin datos"
+        
+        primer_resultado = resultados[0]
+        contador = 0
+        
+        for r in resultados:
+            if r == primer_resultado:
+                contador += 1
+            else:
+                break
+        
+        nombres = {'V': 'victoria', 'E': 'empate', 'D': 'derrota'}
+        nombre = nombres.get(primer_resultado, 'partido')
+        
+        if contador == 1:
+            return f"1 {nombre}"
+        else:
+            # Pluralizar
+            if nombre == 'victoria':
+                nombre = 'victorias'
+            elif nombre == 'empate':
+                nombre = 'empates'
+            else:
+                nombre = 'derrotas'
+            return f"{contador} {nombre} consecutivas"
