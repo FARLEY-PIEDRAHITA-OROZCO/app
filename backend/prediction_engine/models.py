@@ -366,6 +366,8 @@ class Pronostico(BaseModelConfig):
         Nombre del equipo visitante
     liga_id : str
         ID de la liga
+    season_id : str
+        ID de temporada estructurado
     
     tiempo_completo : PronosticoTiempo
         Pronóstico para 90 minutos
@@ -373,6 +375,9 @@ class Pronostico(BaseModelConfig):
         Pronóstico para 1er tiempo
     segundo_tiempo : PronosticoTiempo
         Pronóstico para 2do tiempo
+    
+    forma_reciente : dict
+        Forma de los últimos 5 partidos de cada equipo
     
     version_algoritmo : str
         Versión del algoritmo usado
@@ -385,11 +390,33 @@ class Pronostico(BaseModelConfig):
     equipo_local: str = Field(..., description="Equipo local")
     equipo_visitante: str = Field(..., description="Equipo visitante")
     liga_id: str = Field(..., description="ID de la liga")
+    season_id: Optional[str] = Field(default=None, description="ID de temporada estructurado")
     
     # Pronósticos por tiempo
     tiempo_completo: PronosticoTiempo = Field(..., description="Pronóstico TC")
     primer_tiempo: PronosticoTiempo = Field(..., description="Pronóstico 1MT")
     segundo_tiempo: PronosticoTiempo = Field(..., description="Pronóstico 2MT")
+    
+    # Forma reciente de los equipos
+    forma_reciente: Dict[str, Any] = Field(
+        default_factory=lambda: {
+            "local": {
+                "ultimos_5": [],
+                "rendimiento": 0.0,
+                "goles_favor_avg": 0.0,
+                "goles_contra_avg": 0.0,
+                "racha": ""
+            },
+            "visitante": {
+                "ultimos_5": [],
+                "rendimiento": 0.0,
+                "goles_favor_avg": 0.0,
+                "goles_contra_avg": 0.0,
+                "racha": ""
+            }
+        },
+        description="Forma reciente de los equipos"
+    )
     
     # Metadata
     version_algoritmo: str = Field(default=Config.VERSION, description="Versión")
