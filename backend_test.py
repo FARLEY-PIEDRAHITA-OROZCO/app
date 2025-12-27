@@ -898,7 +898,10 @@ class PredictionEngineTest:
             self.test_14_backward_compatibility,
             # New stats endpoint tests
             self.test_15_stats_global_view,
-            self.test_16_stats_season_view
+            self.test_16_stats_season_view,
+            # Multi-league support tests
+            self.test_17_leagues_list,
+            self.test_18_seasons_by_league
         ]
         
         passed = 0
