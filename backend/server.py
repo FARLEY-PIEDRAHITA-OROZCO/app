@@ -772,31 +772,39 @@ async def get_prediction_config():
 
 @api_router.get("/prediction/teams")
 async def list_teams(
-    liga_id: str = "SPAIN_LA_LIGA",
-    temporada: int = 2023,
+    liga_id: Optional[str] = None,
+    temporada: Optional[int] = None,
     season_id: Optional[str] = None
 ):
     """
     Lista todos los equipos disponibles para pronósticos.
     
     **Parámetros:**
-    - `liga_id`: ID de la liga
-    - `temporada`: Año (legacy)
+    - `liga_id`: ID de la liga (opcional, se infiere de season_id)
+    - `temporada`: Año (legacy, se infiere de season_id)
     - `season_id`: ID de temporada estructurado (preferido)
     """
     try:
-        # Si se proporciona season_id, extraer liga_id de él
+        # Inferir liga_id y temporada de season_id si no se proporcionan
         effective_liga_id = liga_id
         effective_temporada = temporada
         
         if season_id:
             parts = season_id.rsplit('_', 1)
             if len(parts) == 2:
-                effective_liga_id = parts[0]
+                if not effective_liga_id:
+                    effective_liga_id = parts[0]
                 try:
-                    effective_temporada = int(parts[1].split('-')[0])
+                    if not effective_temporada:
+                        effective_temporada = int(parts[1].split('-')[0])
                 except ValueError:
                     pass
+        
+        # Valores por defecto solo si no se puede inferir nada
+        if not effective_liga_id:
+            effective_liga_id = "SPAIN_LA_LIGA"
+        if not effective_temporada:
+            effective_temporada = 2023
         
         equipos = await stats_builder.obtener_todos_equipos(
             effective_liga_id, 
@@ -804,14 +812,14 @@ async def list_teams(
             season_id=season_id
         )
         
-        # Determinar season_id efectivo
+        # Determinar season_id efectivo para respuesta
         effective_season_id = season_id
-        if not effective_season_id and temporada:
-            effective_season_id = f"{liga_id}_{temporada}-{(temporada + 1) % 100:02d}"
+        if not effective_season_id:
+            effective_season_id = f"{effective_liga_id}_{effective_temporada}-{(effective_temporada + 1) % 100:02d}"
         
         return {
-            "liga_id": liga_id,
-            "temporada": temporada,
+            "liga_id": effective_liga_id,
+            "temporada": effective_temporada,
             "season_id": effective_season_id,
             "total": len(equipos),
             "equipos": [
