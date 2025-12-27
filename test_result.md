@@ -408,6 +408,18 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: season_id integration funciona correctamente. El endpoint ahora pasa season_id al motor de predicción y lo incluye en la respuesta. Probado con season_id='SPAIN_LA_LIGA_2023-24' y funciona perfectamente."
 
+  - task: "Hardcoded liga_id removal from endpoints"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Eliminación de valores hardcodeados de liga_id completada exitosamente. Todos los endpoints probados: 1) GET /api/prediction/teams con season_id=ENGLAND_PREMIER_LEAGUE_2022-23 (20 equipos) y SPAIN_LA_LIGA_2023-24 (20 equipos), sin parámetros usa defaults correctos. 2) POST /api/prediction/generate con season_id=ENGLAND_PREMIER_LEAGUE_2022-23 infiere correctamente liga_id y incluye season_id en respuesta. 3) GET /api/prediction/classification con ambos season_id retorna clasificaciones correctas con season_id incluido. 4) GET /api/prediction/team/Manchester%20City con season_id=ENGLAND_PREMIER_LEAGUE_2022-23 retorna stats correctas. Todos los endpoints infieren correctamente liga_id y temporada del season_id, no hay errores cuando solo se proporciona season_id, las respuestas incluyen el season_id correcto."
+
 frontend:
   - task: "Frontend básico existente (Dashboard, Matches, Scraping)"
     implemented: true
