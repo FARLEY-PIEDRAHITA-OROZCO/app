@@ -383,7 +383,10 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus: 
+    - "Dashboard with season_id filter"
+    - "Matches page with season_id filter"
+    - "Stats endpoint with season_id parameter"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
