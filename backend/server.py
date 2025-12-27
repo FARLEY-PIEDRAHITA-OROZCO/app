@@ -744,9 +744,22 @@ async def list_teams(
     - `season_id`: ID de temporada estructurado (preferido)
     """
     try:
+        # Si se proporciona season_id, extraer liga_id de él
+        effective_liga_id = liga_id
+        effective_temporada = temporada
+        
+        if season_id:
+            parts = season_id.rsplit('_', 1)
+            if len(parts) == 2:
+                effective_liga_id = parts[0]
+                try:
+                    effective_temporada = int(parts[1].split('-')[0])
+                except ValueError:
+                    pass
+        
         equipos = await stats_builder.obtener_todos_equipos(
-            liga_id, 
-            temporada,
+            effective_liga_id, 
+            effective_temporada,
             season_id=season_id
         )
         
