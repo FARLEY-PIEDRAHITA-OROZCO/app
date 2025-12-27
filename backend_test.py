@@ -912,7 +912,115 @@ class PredictionEngineTest:
         self.test_results["leagues_list"] = True
         return True
 
-    def test_18_seasons_by_league(self) -> bool:
+    def test_19_new_plla_features(self) -> bool:
+        """Test 19: NEW PLLA 3.0 Features - Over/Under, Goles Esperados, Forma Reciente."""
+        self.log("=== TEST 19: NEW PLLA 3.0 FEATURES ===")
+        
+        # Test with different teams to get varied results
+        data = {
+            "equipo_local": "Real Madrid",
+            "equipo_visitante": "Almeria",
+            "liga_id": "SPAIN_LA_LIGA",
+            "season_id": "SPAIN_LA_LIGA_2023-24"
+        }
+        
+        result = self.make_request("POST", "/prediction/generate", data)
+        
+        if not result["success"]:
+            self.log("❌ NEW PLLA 3.0 features test failed", "ERROR")
+            return False
+            
+        response_data = result["data"]
+        pronostico = response_data.get("pronostico")
+        
+        if not pronostico:
+            self.log("❌ No prediction data in response", "ERROR")
+            return False
+        
+        # Test 1: Detailed Over/Under validation
+        self.log("--- Testing Over/Under Features ---")
+        tiempo_completo = pronostico["tiempo_completo"]
+        over_under = tiempo_completo["over_under"]
+        
+        # Validate Over 1.5
+        over_15 = over_under["over_15"]
+        self.log(f"Over 1.5: {over_15['prediccion']} ({over_15['probabilidad']}%)")
+        if over_15["prediccion"] not in ["OVER", "UNDER"]:
+            self.log("❌ Invalid Over 1.5 prediction", "ERROR")
+            return False
+            
+        # Validate Over 2.5
+        over_25 = over_under["over_25"]
+        self.log(f"Over 2.5: {over_25['prediccion']} ({over_25['probabilidad']}%)")
+        if over_25["prediccion"] not in ["OVER", "UNDER"]:
+            self.log("❌ Invalid Over 2.5 prediction", "ERROR")
+            return False
+            
+        # Validate Over 3.5
+        over_35 = over_under["over_35"]
+        self.log(f"Over 3.5: {over_35['prediccion']} ({over_35['probabilidad']}%)")
+        if over_35["prediccion"] not in ["OVER", "UNDER"]:
+            self.log("❌ Invalid Over 3.5 prediction", "ERROR")
+            return False
+        
+        # Test 2: Goles Esperados validation
+        self.log("--- Testing Goles Esperados ---")
+        goles_esperados = tiempo_completo["goles_esperados"]
+        self.log(f"Goles Local: {goles_esperados['local']}")
+        self.log(f"Goles Visitante: {goles_esperados['visitante']}")
+        self.log(f"Total Esperado: {goles_esperados['total']}")
+        
+        # Validate logical consistency
+        total_calculado = goles_esperados["local"] + goles_esperados["visitante"]
+        if abs(total_calculado - goles_esperados["total"]) > 0.1:
+            self.log(f"❌ Goles esperados inconsistent: {total_calculado} != {goles_esperados['total']}", "ERROR")
+            return False
+            
+        # Test 3: Forma Reciente validation
+        self.log("--- Testing Forma Reciente ---")
+        forma_reciente = pronostico["forma_reciente"]
+        
+        # Real Madrid forma
+        forma_real = forma_reciente["local"]
+        self.log(f"Real Madrid - Últimos 5: {forma_real['ultimos_5']}")
+        self.log(f"Real Madrid - Rendimiento: {forma_real['rendimiento']}%")
+        self.log(f"Real Madrid - Racha: {forma_real['racha']}")
+        
+        # Almeria forma
+        forma_almeria = forma_reciente["visitante"]
+        self.log(f"Almeria - Últimos 5: {forma_almeria['ultimos_5']}")
+        self.log(f"Almeria - Rendimiento: {forma_almeria['rendimiento']}%")
+        self.log(f"Almeria - Racha: {forma_almeria['racha']}")
+        
+        # Validate forma data makes sense
+        if len(forma_real["ultimos_5"]) > 5:
+            self.log("❌ Too many results in ultimos_5", "ERROR")
+            return False
+            
+        # Test 4: Validate all times have new features
+        for tiempo_name in ["primer_tiempo", "segundo_tiempo"]:
+            tiempo_data = pronostico[tiempo_name]
+            
+            if "over_under" not in tiempo_data:
+                self.log(f"❌ Missing over_under in {tiempo_name}", "ERROR")
+                return False
+                
+            if "goles_esperados" not in tiempo_data:
+                self.log(f"❌ Missing goles_esperados in {tiempo_name}", "ERROR")
+                return False
+        
+        # Test 5: Validate season_id is properly passed through
+        if pronostico.get("season_id") != "SPAIN_LA_LIGA_2023-24":
+            self.log(f"❌ season_id not properly passed: {pronostico.get('season_id')}", "ERROR")
+            return False
+        
+        self.log("✅ NEW PLLA 3.0 Features working correctly")
+        self.log("   ✅ Over/Under predictions for 1.5, 2.5, 3.5 goles")
+        self.log("   ✅ Goles esperados (local, visitante, total)")
+        self.log("   ✅ Forma reciente (últimos 5, rendimiento, racha)")
+        self.log("   ✅ season_id integration working")
+        self.test_results["new_plla_features"] = True
+        return True
         """Test 18: GET /api/seasons?liga_id=SPAIN_LA_LIGA - Seasons for specific league."""
         self.log("=== TEST 18: Seasons by League ===")
         
