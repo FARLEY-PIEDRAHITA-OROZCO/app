@@ -787,36 +787,47 @@ async def list_seasons(liga_id: Optional[str] = None):
             {"_id": 0}
         ).sort([("year", -1), ("liga_id", 1)]).to_list(100)
         
-        # Si no hay temporadas en la colección seasons, inferir de partidos
+        # Si no hay temporadas en la colección seasons, inferir de partidos usando season_id
         if not seasons:
             pipeline = [
-                {"$match": query} if liga_id else {"$match": {}},
+                {"$match": {"season_id": {"$exists": True, "$ne": None}}},
                 {"$group": {
-                    "_id": {
-                        "liga_id": "$liga_id",
-                        "season": {"$ifNull": ["$season", 2023]}
-                    },
+                    "_id": "$season_id",
+                    "liga_id": {"$first": "$liga_id"},
                     "total_partidos": {"$sum": 1},
-                    "fecha_min": {"$min": "$fecha"},
-                    "fecha_max": {"$max": "$fecha"}
+                    "fecha_min": {"$min": "$fecha_partido"},
+                    "fecha_max": {"$max": "$fecha_partido"}
                 }},
-                {"$sort": {"_id.season": -1}}
+                {"$sort": {"_id": -1}}
             ]
+            
+            # Aplicar filtro de liga si se proporciona
+            if liga_id:
+                pipeline[0]["$match"]["liga_id"] = liga_id
             
             agg_result = await db.football_matches.aggregate(pipeline).to_list(100)
             
             seasons = []
             for r in agg_result:
-                liga = r["_id"]["liga_id"]
-                year = r["_id"]["season"]
+                season_id = r["_id"]
+                liga = r["liga_id"]
+                # Extraer año del season_id (formato: LIGA_YYYY-YY)
+                try:
+                    year_part = season_id.split("_")[-1]  # "2022-23"
+                    year = int(year_part.split("-")[0])
+                    label = year_part
+                except:
+                    year = 2023
+                    label = "2023-24"
+                
                 seasons.append({
-                    "season_id": f"{liga}_{year}-{(year + 1) % 100:02d}",
+                    "season_id": season_id,
                     "liga_id": liga,
                     "year": year,
-                    "label": f"{year}-{(year + 1) % 100:02d}",
+                    "label": label,
                     "total_partidos": r["total_partidos"],
-                    "fecha_inicio": r["fecha_min"],
-                    "fecha_fin": r["fecha_max"],
+                    "fecha_inicio": r.get("fecha_min"),
+                    "fecha_fin": r.get("fecha_max"),
                     "estado": "inferida"
                 })
         
