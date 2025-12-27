@@ -94,7 +94,8 @@ class ClassificationEngine:
         self,
         liga_id: str,
         temporada: Optional[int] = None,
-        tipo_tiempo: TipoTiempo = TipoTiempo.COMPLETO
+        tipo_tiempo: TipoTiempo = TipoTiempo.COMPLETO,
+        season_id: Optional[str] = None
     ) -> TablaClasificacion:
         """
         Genera la tabla de clasificación para una liga.
@@ -104,9 +105,11 @@ class ClassificationEngine:
         liga_id : str
             ID de la liga
         temporada : int, optional
-            Año de la temporada
+            Año de la temporada (legacy)
         tipo_tiempo : TipoTiempo
             COMPLETO, PRIMER_TIEMPO o SEGUNDO_TIEMPO
+        season_id : str, optional
+            ID de temporada estructurado (preferido)
         
         Retorna:
         --------
@@ -128,21 +131,27 @@ class ClassificationEngine:
         Ejemplo:
         --------
         ```python
-        # Clasificación de tiempo completo
-        tabla_tc = await engine.generar_clasificacion(
-            'SPAIN_LA_LIGA', 2023, TipoTiempo.COMPLETO
+        # Clasificación con season_id (preferido)
+        tabla = await engine.generar_clasificacion(
+            'SPAIN_LA_LIGA',
+            season_id='SPAIN_LA_LIGA_2023-24',
+            tipo_tiempo=TipoTiempo.COMPLETO
         )
         
-        # Clasificación de primer tiempo
-        tabla_1mt = await engine.generar_clasificacion(
-            'SPAIN_LA_LIGA', 2023, TipoTiempo.PRIMER_TIEMPO
+        # Clasificación legacy
+        tabla = await engine.generar_clasificacion(
+            'SPAIN_LA_LIGA', 2023, TipoTiempo.COMPLETO
         )
         ```
         """
-        logger.info(f"Generando clasificación para {liga_id}, tiempo: {tipo_tiempo.value}")
+        logger.info(f"Generando clasificación para {liga_id}, season_id={season_id}, tiempo: {tipo_tiempo.value}")
         
         # Obtener todos los equipos
-        equipos = await self.stats_builder.obtener_todos_equipos(liga_id, temporada)
+        equipos = await self.stats_builder.obtener_todos_equipos(
+            liga_id, 
+            temporada,
+            season_id=season_id
+        )
         
         if not equipos:
             logger.warning(f"No hay equipos para {liga_id}")
