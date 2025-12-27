@@ -1,9 +1,41 @@
 # 📚 Referencia de API - Sistema PLLA 3.0
 
+> **Versión:** 3.1.0 | **Última actualización:** Diciembre 2024
+
 ## Base URL
 
 ```
-http://localhost:8001/api
+Local: http://localhost:8001/api
+Producción: {REACT_APP_BACKEND_URL}/api
+```
+
+---
+
+## 🏆 Ligas
+
+### GET /leagues
+
+Lista todas las ligas disponibles en la base de datos.
+
+**Ejemplo:**
+```bash
+curl -X GET "http://localhost:8001/api/leagues"
+```
+
+**Respuesta:**
+```json
+[
+  {
+    "_id": "SPAIN_LA_LIGA",
+    "liga_nombre": "La Liga",
+    "total_partidos": 380
+  },
+  {
+    "_id": "ENGLAND_PREMIER_LEAGUE",
+    "liga_nombre": "Premier League",
+    "total_partidos": 380
+  }
+]
 ```
 
 ---
@@ -17,23 +49,23 @@ Lista todas las temporadas disponibles.
 **Parámetros Query:**
 | Nombre | Tipo | Requerido | Descripción |
 |--------|------|-----------|-------------|
-| `liga_id` | string | No | Filtrar por liga (default: todas) |
+| `liga_id` | string | No | Filtrar por liga |
 
 **Ejemplo:**
 ```bash
-curl -X GET "http://localhost:8001/api/seasons?liga_id=SPAIN_LA_LIGA"
+curl -X GET "http://localhost:8001/api/seasons?liga_id=ENGLAND_PREMIER_LEAGUE"
 ```
 
 **Respuesta:**
 ```json
 {
-  "success": true,
+  "total": 1,
   "seasons": [
     {
-      "season_id": "SPAIN_LA_LIGA_2023-24",
-      "liga_id": "SPAIN_LA_LIGA",
-      "year": 2023,
-      "label": "2023-24",
+      "season_id": "ENGLAND_PREMIER_LEAGUE_2022-23",
+      "liga_id": "ENGLAND_PREMIER_LEAGUE",
+      "year": 2022,
+      "label": "2022-23",
       "total_partidos": 380
     }
   ]
@@ -42,28 +74,193 @@ curl -X GET "http://localhost:8001/api/seasons?liga_id=SPAIN_LA_LIGA"
 
 ---
 
-### GET /seasons/{season_id}
+## ⚽ Pronósticos
 
-Obtiene detalle de una temporada específica.
+### POST /prediction/generate
 
-**Ejemplo:**
-```bash
-curl -X GET "http://localhost:8001/api/seasons/SPAIN_LA_LIGA_2023-24"
+Genera un pronóstico completo para un partido.
+
+**Body:**
+```json
+{
+  "equipo_local": "Manchester City",
+  "equipo_visitante": "Arsenal",
+  "liga_id": "ENGLAND_PREMIER_LEAGUE",
+  "season_id": "ENGLAND_PREMIER_LEAGUE_2022-23"
+}
+```
+
+**Respuesta Completa:**
+```json
+{
+  "success": true,
+  "pronostico": {
+    "id": "uuid-xxx",
+    "equipo_local": "Manchester City",
+    "equipo_visitante": "Arsenal",
+    "liga_id": "ENGLAND_PREMIER_LEAGUE",
+    "season_id": "ENGLAND_PREMIER_LEAGUE_2022-23",
+    "tiempo_completo": {
+      "pronostico": "L",
+      "doble_oportunidad": "1X",
+      "ambos_marcan": "SI",
+      "probabilidades": {
+        "local": 48.52,
+        "empate": 26.31,
+        "visita": 25.17
+      },
+      "confianza": 52.34,
+      "over_under": {
+        "over_15": {"prediccion": "OVER", "probabilidad": 92.14},
+        "over_25": {"prediccion": "OVER", "probabilidad": 80.32},
+        "over_35": {"prediccion": "OVER", "probabilidad": 62.47}
+      },
+      "goles_esperados": {
+        "local": 2.12,
+        "visitante": 1.48,
+        "total": 3.60
+      }
+    },
+    "primer_tiempo": {
+      "pronostico": "L",
+      "doble_oportunidad": "1X",
+      "ambos_marcan": "NO",
+      "probabilidades": {"local": 45.2, "empate": 32.1, "visita": 22.7},
+      "over_under": {
+        "over_15": {"prediccion": "UNDER", "probabilidad": 59.3},
+        "over_25": {"prediccion": "UNDER", "probabilidad": 83.1},
+        "over_35": {"prediccion": "UNDER", "probabilidad": 94.2}
+      },
+      "goles_esperados": {"local": 0.95, "visitante": 0.67, "total": 1.62}
+    },
+    "segundo_tiempo": {
+      "pronostico": "L",
+      "doble_oportunidad": "1X",
+      "ambos_marcan": "NO",
+      "probabilidades": {"local": 44.8, "empate": 30.5, "visita": 24.7},
+      "over_under": {
+        "over_15": {"prediccion": "OVER", "probabilidad": 51.2},
+        "over_25": {"prediccion": "UNDER", "probabilidad": 76.4},
+        "over_35": {"prediccion": "UNDER", "probabilidad": 91.8}
+      },
+      "goles_esperados": {"local": 1.17, "visitante": 0.81, "total": 1.98}
+    },
+    "forma_reciente": {
+      "local": {
+        "ultimos_5": ["V", "V", "V", "V", "E"],
+        "rendimiento": 86.67,
+        "goles_favor_avg": 3.8,
+        "goles_contra_avg": 0.6,
+        "racha": "4 victorias consecutivas"
+      },
+      "visitante": {
+        "ultimos_5": ["V", "V", "V", "V", "V"],
+        "rendimiento": 100.0,
+        "goles_favor_avg": 2.6,
+        "goles_contra_avg": 0.4,
+        "racha": "5 victorias consecutivas"
+      }
+    },
+    "version_algoritmo": "1.0.0",
+    "fecha_generacion": "2024-12-27T08:00:00Z"
+  }
+}
+```
+
+---
+
+### POST /prediction/build-stats
+
+Construye estadísticas de equipos para una temporada.
+
+**Body:**
+```json
+{
+  "season_id": "ENGLAND_PREMIER_LEAGUE_2022-23"
+}
 ```
 
 **Respuesta:**
 ```json
 {
   "success": true,
-  "season": {
-    "season_id": "SPAIN_LA_LIGA_2023-24",
-    "liga_id": "SPAIN_LA_LIGA",
-    "liga_nombre": "La Liga",
-    "year": 2023,
-    "label": "2023-24",
-    "total_partidos": 380,
-    "equipos": ["Barcelona", "Real Madrid", ...]
-  }
+  "message": "Estadísticas construidas para 20 equipos",
+  "liga_id": "ENGLAND_PREMIER_LEAGUE",
+  "temporada": 2022,
+  "season_id": "ENGLAND_PREMIER_LEAGUE_2022-23",
+  "equipos": ["Manchester City", "Arsenal", "Manchester United", ...]
+}
+```
+
+---
+
+### GET /prediction/teams
+
+Lista todos los equipos disponibles para pronósticos.
+
+**Parámetros Query:**
+| Nombre | Tipo | Requerido | Descripción |
+|--------|------|-----------|-------------|
+| `season_id` | string | Sí* | ID de temporada estructurado |
+| `liga_id` | string | No | Legacy: ID de liga |
+| `temporada` | int | No | Legacy: Año |
+
+**Ejemplo:**
+```bash
+curl "http://localhost:8001/api/prediction/teams?season_id=ENGLAND_PREMIER_LEAGUE_2022-23"
+```
+
+**Respuesta:**
+```json
+{
+  "liga_id": "ENGLAND_PREMIER_LEAGUE",
+  "temporada": 2022,
+  "season_id": "ENGLAND_PREMIER_LEAGUE_2022-23",
+  "total_equipos": 20,
+  "equipos": [
+    {"nombre": "Manchester City", "puntos": 89, "rendimiento": 78.07},
+    {"nombre": "Arsenal", "puntos": 84, "rendimiento": 73.68},
+    {"nombre": "Manchester United", "puntos": 75, "rendimiento": 65.79},
+    ...
+  ]
+}
+```
+
+---
+
+### GET /prediction/classification
+
+Obtiene la tabla de clasificación.
+
+**Parámetros Query:**
+| Nombre | Tipo | Requerido | Descripción |
+|--------|------|-----------|-------------|
+| `season_id` | string | Sí* | ID de temporada |
+| `tipo_tiempo` | string | No | `completo`, `primer_tiempo`, `segundo_tiempo` |
+
+**Ejemplo:**
+```bash
+curl "http://localhost:8001/api/prediction/classification?season_id=SPAIN_LA_LIGA_2023-24&tipo_tiempo=completo"
+```
+
+**Respuesta:**
+```json
+{
+  "success": true,
+  "liga_id": "SPAIN_LA_LIGA",
+  "season_id": "SPAIN_LA_LIGA_2023-24",
+  "tipo_tiempo": "completo",
+  "total_equipos": 20,
+  "clasificacion": [
+    {
+      "posicion": 1,
+      "equipo": "Real Madrid",
+      "pj": 38, "v": 29, "e": 8, "d": 1,
+      "gf": 87, "gc": 26, "dif": 61,
+      "pts": 95, "rendimiento": 83.33
+    },
+    ...
+  ]
 }
 ```
 
@@ -80,401 +277,19 @@ Obtiene estadísticas generales del sistema.
 |--------|------|-----------|-------------|
 | `season_id` | string | No | Filtrar por temporada |
 
-**Sin season_id (Vista Global):**
+**Ejemplo (Vista Global):**
 ```bash
-curl -X GET "http://localhost:8001/api/stats"
+curl "http://localhost:8001/api/stats"
 ```
 
-**Respuesta:**
-```json
-{
-  "total_matches": 380,
-  "total_leagues": 1,
-  "leagues": [
-    {
-      "_id": "SPAIN_LA_LIGA",
-      "liga_nombre": "La Liga",
-      "total": 380
-    }
-  ],
-  "avg_goals_per_match": 2.64,
-  "total_goals": 1005,
-  "last_update": "2024-12-02T04:33:18Z"
-}
-```
-
-**Con season_id (Por Temporada):**
+**Ejemplo (Por Temporada):**
 ```bash
-curl -X GET "http://localhost:8001/api/stats?season_id=SPAIN_LA_LIGA_2023-24"
-```
-
-**Respuesta:**
-```json
-{
-  "total_matches": 380,
-  "total_leagues": 10,
-  "leagues": [
-    {"_id": "Regular Season - 1", "total": 10},
-    {"_id": "Regular Season - 2", "total": 10},
-    ...
-  ],
-  "avg_goals_per_match": 2.64,
-  "total_goals": 1005,
-  "last_update": "2024-12-02T04:33:18Z",
-  "season_id": "SPAIN_LA_LIGA_2023-24",
-  "season_label": "2023-24"
-}
+curl "http://localhost:8001/api/stats?season_id=SPAIN_LA_LIGA_2023-24"
 ```
 
 ---
 
-## ⚽ Pronósticos
-
-### POST /prediction/build-stats
-
-Construye estadísticas de equipos para una temporada.
-
-**Body:**
-```json
-{
-  "season_id": "SPAIN_LA_LIGA_2023-24"
-}
-```
-
-**O (legacy):**
-```json
-{
-  "liga_id": "SPAIN_LA_LIGA",
-  "temporada": 2023
-}
-```
-
-**Ejemplo:**
-```bash
-curl -X POST "http://localhost:8001/api/prediction/build-stats" \
-  -H "Content-Type: application/json" \
-  -d '{"season_id": "SPAIN_LA_LIGA_2023-24"}'
-```
-
-**Respuesta:**
-```json
-{
-  "success": true,
-  "message": "Estadísticas construidas para 20 equipos",
-  "season_id": "SPAIN_LA_LIGA_2023-24",
-  "equipos": ["Real Madrid", "Barcelona", ...]
-}
-```
-
----
-
-### POST /prediction/generate
-
-Genera un pronóstico para un partido.
-
-**Body:**
-```json
-{
-  "equipo_local": "Barcelona",
-  "equipo_visitante": "Real Madrid",
-  "season_id": "SPAIN_LA_LIGA_2023-24"
-}
-```
-
-**Ejemplo:**
-```bash
-curl -X POST "http://localhost:8001/api/prediction/generate" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "equipo_local": "Barcelona",
-    "equipo_visitante": "Real Madrid",
-    "season_id": "SPAIN_LA_LIGA_2023-24"
-  }'
-```
-
-**Respuesta:**
-```json
-{
-  "success": true,
-  "pronostico": {
-    "id": "uuid-xxx",
-    "equipo_local": "Barcelona",
-    "equipo_visitante": "Real Madrid",
-    "season_id": "SPAIN_LA_LIGA_2023-24",
-    "tiempo_completo": {
-      "pronostico": "E",
-      "doble_oportunidad": "1X",
-      "ambos_marcan": "SI",
-      "probabilidades": {
-        "local": 36.88,
-        "empate": 27.85,
-        "visita": 35.27
-      },
-      "confianza": 42.54
-    },
-    "primer_tiempo": { ... },
-    "segundo_tiempo": { ... }
-  }
-}
-```
-
----
-
-### GET /prediction/classification
-
-Obtiene la tabla de clasificación.
-
-**Parámetros Query:**
-| Nombre | Tipo | Requerido | Descripción |
-|--------|------|-----------|-------------|
-| `season_id` | string | Sí* | ID de temporada |
-| `liga_id` | string | No | Legacy: ID de liga |
-| `temporada` | int | No | Legacy: Año |
-| `tipo_tiempo` | string | No | `completo`, `primer_tiempo`, `segundo_tiempo` |
-
-*Se puede usar `season_id` O `liga_id` + `temporada`
-
-**Ejemplo:**
-```bash
-curl -X GET "http://localhost:8001/api/prediction/classification?season_id=SPAIN_LA_LIGA_2023-24&tipo_tiempo=completo"
-```
-
-**Respuesta:**
-```json
-{
-  "success": true,
-  "liga_id": "SPAIN_LA_LIGA",
-  "season_id": "SPAIN_LA_LIGA_2023-24",
-  "tipo_tiempo": "completo",
-  "total_equipos": 20,
-  "clasificacion": [
-    {
-      "posicion": 1,
-      "equipo": "Real Madrid",
-      "pj": 38,
-      "v": 29,
-      "e": 8,
-      "d": 1,
-      "gf": 87,
-      "gc": 26,
-      "dif": 61,
-      "pts": 95,
-      "rendimiento": 83.33
-    },
-    ...
-  ]
-}
-```
-
----
-
-### GET /prediction/teams
-
-Lista todos los equipos con estadísticas básicas.
-
-**Parámetros Query:**
-| Nombre | Tipo | Requerido | Descripción |
-|--------|------|-----------|-------------|
-| `season_id` | string | Sí* | ID de temporada |
-| `liga_id` | string | No | Legacy: ID de liga |
-| `temporada` | int | No | Legacy: Año |
-
-**Ejemplo:**
-```bash
-curl -X GET "http://localhost:8001/api/prediction/teams?season_id=SPAIN_LA_LIGA_2023-24"
-```
-
-**Respuesta:**
-```json
-{
-  "success": true,
-  "season_id": "SPAIN_LA_LIGA_2023-24",
-  "total_equipos": 20,
-  "equipos": [
-    {
-      "nombre": "Real Madrid",
-      "puntos": 95,
-      "partidos_jugados": 38,
-      "rendimiento": 83.33
-    },
-    ...
-  ]
-}
-```
-
----
-
-### GET /prediction/team/{nombre}
-
-Obtiene estadísticas detalladas de un equipo.
-
-**Parámetros Path:**
-| Nombre | Tipo | Descripción |
-|--------|------|-------------|
-| `nombre` | string | Nombre del equipo |
-
-**Parámetros Query:**
-| Nombre | Tipo | Requerido | Descripción |
-|--------|------|-----------|-------------|
-| `season_id` | string | Sí | ID de temporada |
-
-**Ejemplo:**
-```bash
-curl -X GET "http://localhost:8001/api/prediction/team/Barcelona?season_id=SPAIN_LA_LIGA_2023-24"
-```
-
-**Respuesta:**
-```json
-{
-  "success": true,
-  "equipo": {
-    "nombre": "Barcelona",
-    "season_id": "SPAIN_LA_LIGA_2023-24",
-    "tiempo_completo": {
-      "partidos_jugados": 38,
-      "victorias": 26,
-      "empates": 7,
-      "derrotas": 5,
-      "goles_favor": 79,
-      "goles_contra": 44,
-      "puntos": 85,
-      "rendimiento_general": 74.56,
-      "pj_local": 19,
-      "v_local": 16,
-      "rendimiento_local": 84.21,
-      "pj_visitante": 19,
-      "v_visitante": 10,
-      "rendimiento_visitante": 59.65
-    },
-    "primer_tiempo": { ... },
-    "segundo_tiempo": { ... }
-  }
-}
-```
-
----
-
-### POST /prediction/validate
-
-Valida un pronóstico contra el resultado real.
-
-**Body:**
-```json
-{
-  "pronostico_id": "uuid-xxx",
-  "goles_local_tr": 2,
-  "goles_visitante_tr": 1,
-  "goles_local_1mt": 1,
-  "goles_visitante_1mt": 0
-}
-```
-
-**Respuesta:**
-```json
-{
-  "success": true,
-  "validacion": {
-    "pronostico_id": "uuid-xxx",
-    "tiempo_completo": {
-      "pronostico": "E",
-      "resultado_real": "L",
-      "acierto_principal": false,
-      "doble_oportunidad_gana": true,
-      "ambos_marcan_gana": true
-    },
-    ...
-  }
-}
-```
-
----
-
-### GET /prediction/effectiveness
-
-Obtiene métricas de efectividad del sistema.
-
-**Ejemplo:**
-```bash
-curl -X GET "http://localhost:8001/api/prediction/effectiveness"
-```
-
-**Respuesta:**
-```json
-{
-  "success": true,
-  "total_validaciones": 150,
-  "tiempo_completo": {
-    "principal": { "aciertos": 65, "accuracy": 43.33 },
-    "doble_oportunidad": { "aciertos": 112, "accuracy": 74.67 },
-    "ambos_marcan": { "aciertos": 98, "accuracy": 65.33 }
-  }
-}
-```
-
----
-
-### GET /prediction/config
-
-Obtiene la configuración actual del algoritmo.
-
-**Ejemplo:**
-```bash
-curl -X GET "http://localhost:8001/api/prediction/config"
-```
-
-**Respuesta:**
-```json
-{
-  "version": "1.0.0",
-  "umbrales": {
-    "PROB_LOCAL_MIN": 43.0,
-    "PROB_LOCAL_MAX": 69.5,
-    "PROB_EMPATE_MAX": 20.0,
-    "SUMA_PROB_MIN": 116.0,
-    "UMBRAL_AMBOS_MARCAN": 45.0
-  },
-  "factores": {
-    "FACTOR_5_MIN": 80.0,
-    "FACTOR_4_MIN": 60.0,
-    "FACTOR_3_MIN": 40.0,
-    "FACTOR_2_MIN": 20.0
-  }
-}
-```
-
----
-
-## 📋 Datos
-
-### POST /matches/search
-
-Busca partidos con filtros.
-
-**Body:**
-```json
-{
-  "season_id": "SPAIN_LA_LIGA_2023-24",
-  "liga_id": "",
-  "fecha_inicio": "",
-  "fecha_fin": "",
-  "equipo": "",
-  "limit": 50,
-  "skip": 0
-}
-```
-
-**Respuesta:**
-```json
-{
-  "success": true,
-  "matches": [...],
-  "total": 380,
-  "page": 1,
-  "pages": 8
-}
-```
-
----
+## 📥 Exportación
 
 ### POST /export
 
@@ -483,54 +298,51 @@ Exporta datos a CSV o JSON.
 **Body:**
 ```json
 {
-  "format": "csv",
+  "format": "json",
   "season_id": "SPAIN_LA_LIGA_2023-24",
-  "liga_id": null,
   "limit": 10000
 }
 ```
 
-**Respuesta:** Archivo CSV/JSON descargable.
+**Respuesta:** Archivo descargable (CSV o JSON)
 
 ---
 
-### GET /leagues
+## 🔄 Extracción de Datos
 
-Lista todas las ligas disponibles.
+### POST /scrape/start
 
-**Respuesta:**
-```json
-[
-  {
-    "_id": "SPAIN_LA_LIGA",
-    "liga_nombre": "La Liga",
-    "total": 380
-  }
-]
-```
-
----
-
-### POST /scrape-league
-
-Inicia extracción de datos de API-Football.
+Inicia extracción de datos desde API-Football.
 
 **Body:**
 ```json
 {
-  "league_id": 140,
-  "season": 2024,
-  "liga_id": "SPAIN_LA_LIGA"
+  "season": 2022,
+  "league_ids": [39],
+  "limit": 1
 }
 ```
+
+**IDs de Ligas:**
+| Liga | ID |
+|------|----|
+| La Liga | 140 |
+| Premier League | 39 |
+| Serie A | 135 |
+| Bundesliga | 78 |
+| Ligue 1 | 61 |
+| Liga MX | 262 |
+
+### GET /scrape/status
+
+Obtiene el estado del proceso de extracción.
 
 **Respuesta:**
 ```json
 {
-  "success": true,
-  "message": "Scraping iniciado",
-  "season_id": "SPAIN_LA_LIGA_2024-25",
-  "partidos_procesados": 150
+  "is_running": false,
+  "progress": 100,
+  "message": "Proceso completado"
 }
 ```
 
@@ -547,7 +359,7 @@ Inicia extracción de datos de API-Football.
 **Ejemplo de error:**
 ```json
 {
-  "detail": "Equipo 'EquipoInexistente' no encontrado"
+  "detail": "No se encontraron estadísticas para Manchester City"
 }
 ```
 
@@ -555,7 +367,7 @@ Inicia extracción de datos de API-Football.
 
 ## 🔄 Compatibilidad Legacy
 
-Todos los endpoints mantienen compatibilidad con el sistema anterior:
+Todos los endpoints mantienen compatibilidad con el formato anterior:
 
 | Nuevo (Recomendado) | Legacy (Compatible) |
 |---------------------|---------------------|
@@ -563,4 +375,4 @@ Todos los endpoints mantienen compatibilidad con el sistema anterior:
 
 ---
 
-*Documentación API - Sistema PLLA 3.0.1 - Diciembre 2024*
+*Documentación API - Sistema PLLA 3.1.0 - Diciembre 2024*

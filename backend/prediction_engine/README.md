@@ -5,6 +5,14 @@
 Módulo Python que implementa el algoritmo de pronósticos deportivos PLLA 3.0.
 Convierte la lógica del Excel (526,550+ fórmulas) en código modular y mantenible.
 
+## Versión 3.1.0 - Novedades
+
+- ✅ **Over/Under Goles:** Predicciones para 1.5, 2.5 y 3.5 goles
+- ✅ **Goles Esperados:** Cálculo usando distribución de Poisson
+- ✅ **Forma Reciente:** Análisis de últimos 5 partidos
+- ✅ **Ajuste por Forma:** Probabilidades ajustadas (peso 30%)
+- ✅ **Soporte season_id:** Filtrado correcto por temporada
+
 ## Estructura
 
 ```
@@ -18,123 +26,77 @@ prediction_engine/
 └── validation.py         # Validador GANA/PIERDE
 ```
 
-## Funcionalidades
+## Uso Básico
 
-- ✅ Estadísticas por equipo (PJ, V, E, D, GF, GC, Pts)
-- ✅ Tres tiempos: Completo (TC), 1er Tiempo (1MT), 2do Tiempo (2MT)
-- ✅ Tres contextos: General, Local, Visitante
-- ✅ Pronóstico principal: L/E/V
-- ✅ Doble oportunidad: 1X/X2/12
-- ✅ Ambos marcan: SI/NO
-- ✅ Validación post-partido
-- ✅ **Soporte completo de `season_id`**
-
-## Uso
-
-### Construcción de Estadísticas
-
-```python
-from prediction_engine import StatsBuilder
-
-stats_builder = StatsBuilder(db)
-
-# Con season_id (recomendado)
-equipos = await stats_builder.construir_estadisticas(
-    season_id='SPAIN_LA_LIGA_2023-24'
-)
-
-# Legacy (compatible)
-equipos = await stats_builder.construir_estadisticas(
-    liga_id='SPAIN_LA_LIGA',
-    temporada=2023
-)
-```
-
-### Generación de Pronósticos
+### Generar Pronóstico
 
 ```python
 from prediction_engine import PredictionEngine
 
 engine = PredictionEngine(db)
 
-# Con season_id
+# Con season_id (recomendado)
 resultado = await engine.generar_pronostico(
-    equipo_local='Barcelona',
-    equipo_visitante='Real Madrid',
-    season_id='SPAIN_LA_LIGA_2023-24'
+    equipo_local='Manchester City',
+    equipo_visitante='Arsenal',
+    liga_id='ENGLAND_PREMIER_LEAGUE',
+    season_id='ENGLAND_PREMIER_LEAGUE_2022-23'
 )
 
-print(resultado.tiempo_completo.pronostico)  # "E"
-print(resultado.tiempo_completo.doble_oportunidad)  # "1X"
-print(resultado.tiempo_completo.ambos_marcan)  # "SI"
+# Acceder a resultados
+tc = resultado.tiempo_completo
+print(f"Pronóstico: {tc.pronostico}")           # "L"
+print(f"Doble oportunidad: {tc.doble_oportunidad}")  # "1X"
+print(f"Ambos marcan: {tc.ambos_marcan}")       # "SI"
+
+# 🆕 Nuevos campos
+print(f"Over 2.5: {tc.over_under['over_25']}")  # {"prediccion": "OVER", "probabilidad": 80.3}
+print(f"Goles esperados: {tc.goles_esperados}")  # {"local": 2.1, "visitante": 1.5, "total": 3.6}
+
+# 🆕 Forma reciente
+print(f"Forma local: {resultado.forma_reciente['local']['ultimos_5']}")  # ["V","V","V","V","E"]
+print(f"Racha: {resultado.forma_reciente['local']['racha']}")  # "4 victorias consecutivas"
 ```
 
-### Clasificación
+### Obtener Forma Reciente
 
 ```python
-from prediction_engine import ClassificationEngine
+from prediction_engine import StatsBuilder
 
-classification = ClassificationEngine(db)
+stats_builder = StatsBuilder(db)
 
-# Obtener tabla de posiciones
-tabla = await classification.obtener_clasificacion(
-    season_id='SPAIN_LA_LIGA_2023-24',
-    tipo_tiempo='completo'  # 'completo' | 'primer_tiempo' | 'segundo_tiempo'
+forma = await stats_builder.obtener_forma_reciente(
+    nombre_equipo='Manchester City',
+    liga_id='ENGLAND_PREMIER_LEAGUE',
+    season_id='ENGLAND_PREMIER_LEAGUE_2022-23',
+    n_partidos=5
 )
 
-for equipo in tabla:
-    print(f"{equipo.posicion}. {equipo.nombre} - {equipo.pts} pts")
+# Resultado:
+# {
+#     "ultimos_5": ["V", "V", "V", "V", "E"],
+#     "rendimiento": 86.67,
+#     "goles_favor_avg": 3.8,
+#     "goles_contra_avg": 0.6,
+#     "racha": "4 victorias consecutivas"
+# }
 ```
 
 ## Modelos de Datos
 
-### Equipo
+### PronosticoTiempo
 
 ```python
-class Equipo(BaseModel):
-    id: str
-    nombre: str
-    liga_id: str
-    temporada: int
-    season_id: Optional[str]  # ID de temporada estructurado
-    stats_completo: EstadisticasEquipo
-    stats_primer_tiempo: EstadisticasEquipo
-    stats_segundo_tiempo: EstadisticasEquipo
-```
-
-### EstadisticasEquipo
-
-```python
-class EstadisticasEquipo(BaseModel):
-    # General
-    partidos_jugados: int
-    victorias: int
-    empates: int
-    derrotas: int
-    goles_favor: int
-    goles_contra: int
-    puntos: int
-    rendimiento_general: float
+class PronosticoTiempo(BaseModel):
+    pronostico: str           # "L", "E", "V"
+    doble_oportunidad: str    # "1X", "X2", "12"
+    ambos_marcan: str         # "SI", "NO"
+    probabilidades: Dict      # {local, empate, visita}
+    confianza: float          # 0-100
     
-    # Como Local
-    pj_local: int
-    v_local: int
-    e_local: int
-    d_local: int
-    gf_local: int
-    gc_local: int
-    pts_local: int
-    rendimiento_local: float
-    
-    # Como Visitante
-    pj_visitante: int
-    v_visitante: int
-    e_visitante: int
-    d_visitante: int
-    gf_visitante: int
-    gc_visitante: int
-    pts_visitante: int
-    rendimiento_visitante: float
+    # 🆕 Nuevos campos
+    over_under: Dict[str, Any]  # over_15, over_25, over_35
+    goles_esperados: Dict[str, float]  # local, visitante, total
 ```
 
 ### Pronostico
@@ -143,107 +105,57 @@ class EstadisticasEquipo(BaseModel):
 class Pronostico(BaseModel):
     equipo_local: str
     equipo_visitante: str
-    season_id: Optional[str]
+    liga_id: str
+    season_id: Optional[str]  # 🆕 Ahora incluido
+    
     tiempo_completo: PronosticoTiempo
     primer_tiempo: PronosticoTiempo
     segundo_tiempo: PronosticoTiempo
-
-class PronosticoTiempo(BaseModel):
-    pronostico: str  # "L", "E", "V"
-    doble_oportunidad: str  # "1X", "X2", "12"
-    ambos_marcan: str  # "SI", "NO"
-    probabilidades: Dict[str, float]  # {local, empate, visita}
-    confianza: float  # 0-100
+    
+    # 🆕 Forma reciente
+    forma_reciente: Dict[str, Any]  # local, visitante
 ```
 
-## Configuración del Algoritmo
+## Configuración (config.py)
 
-### Umbrales (config.py)
+### Umbrales de Pronóstico
 
 | Parámetro | Valor | Descripción |
 |-----------|-------|-------------|
-| `PROB_LOCAL_MIN` | 43% | Mínimo para pronosticar LOCAL |
+| `PROB_LOCAL_MIN` | 43% | Mínimo para LOCAL |
 | `PROB_LOCAL_MAX` | 69.5% | Máximo antes de "muy favorito" |
-| `PROB_EMPATE_MAX` | 20% | Máximo de empate para decidir |
-| `SUMA_PROB_MIN` | 116% | Mínimo para doble oportunidad "12" |
-| `UMBRAL_AMBOS_MARCAN` | 45% | Umbral para SI/NO |
+| `PROB_EMPATE_MAX` | 20% | Máximo para decidir |
+| `UMBRAL_AMBOS_MARCAN` | 45% | Umbral SI/NO |
 
-### Factores de Rendimiento
+### 🆕 Nuevos Umbrales
 
-| Factor | Rendimiento | Descripción |
-|--------|-------------|-------------|
-| 5 | > 80% | Equipo dominante |
-| 4 | 60-80% | Equipo fuerte |
-| 3 | 40-60% | Equipo promedio |
-| 2 | 20-40% | Equipo débil |
-| 1 | < 20% | Equipo muy débil |
+| Parámetro | Valor | Descripción |
+|-----------|-------|-------------|
+| `OVER_15_UMBRAL` | 1.5 | Umbral Over 1.5 |
+| `OVER_25_UMBRAL` | 2.5 | Umbral Over 2.5 |
+| `OVER_35_UMBRAL` | 3.5 | Umbral Over 3.5 |
+| `PESO_FORMA_RECIENTE` | 0.3 | Peso de forma (30%) |
+| `PARTIDOS_FORMA_RECIENTE` | 5 | Últimos N partidos |
 
-## API Endpoints
+## Algoritmo de Over/Under
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/prediction/build-stats` | Construir estadísticas (acepta `season_id`) |
-| POST | `/api/prediction/generate` | Generar pronóstico (acepta `season_id`) |
-| GET | `/api/prediction/classification?season_id=X` | Clasificación por temporada |
-| GET | `/api/prediction/team/{nombre}?season_id=X` | Stats de equipo |
-| GET | `/api/prediction/teams?season_id=X` | Lista equipos |
-| POST | `/api/prediction/validate` | Validar pronóstico |
-| GET | `/api/prediction/effectiveness` | Métricas del sistema |
-| GET | `/api/prediction/config` | Configuración actual |
-
-## Flujo del Algoritmo
+El cálculo de Over/Under usa distribución de Poisson:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    FLUJO DEL PRONÓSTICO                          │
-└─────────────────────────────────────────────────────────────────┘
+P(X > umbral) = 1 - Σ P(X = k) para k = 0 hasta umbral
 
-     ┌──────────────┐
-     │   PARTIDOS   │  ← Filtrados por season_id
-     │  (MongoDB)   │
-     └──────┬───────┘
-            │
-            ▼
-┌───────────────────────┐
-│   STATS BUILDER       │  ← Construye stats por equipo
-│   (stats_builder.py)  │     PJ, V, E, D, GF, GC, Pts
-└───────────┬───────────┘
-            │
-            ▼
-┌───────────────────────┐
-│   PREDICTION ENGINE   │  ← Genera pronósticos
-│   (prediction_engine) │
-│                       │
-│   1. Probabilidad     │  ← Calcula L/E/V %
-│   2. Factores (1-5)   │  ← Ajuste por rendimiento
-│   3. Decisión         │  ← Aplica reglas
-│   4. Doble Oport.     │  ← 1X/X2/12
-│   5. Ambos Marcan     │  ← SI/NO
-│   6. Confianza        │  ← 0-100%
-│                       │
-└───────────┬───────────┘
-            │
-            ▼
-┌───────────────────────┐
-│   VALIDATION ENGINE   │  ← Compara con resultados
-│   (validation.py)     │     GANA/PIERDE
-└───────────────────────┘
+donde P(X = k) = (λ^k * e^-λ) / k!
+      λ = goles esperados totales
 ```
 
-## Compatibilidad
+## Algoritmo de Forma Reciente
 
-El módulo mantiene compatibilidad hacia atrás:
-
-```python
-# Nuevo (recomendado)
-await stats_builder.construir_estadisticas(season_id='SPAIN_LA_LIGA_2023-24')
-
-# Legacy (sigue funcionando)
-await stats_builder.construir_estadisticas(liga_id='SPAIN_LA_LIGA', temporada=2023)
-```
-
-Internamente, si se pasa `liga_id` y `temporada`, se construye el `season_id` automáticamente.
+1. Obtener últimos N partidos del equipo
+2. Calcular resultados (V/E/D) y puntos
+3. Calcular rendimiento: `puntos_obtenidos / puntos_posibles * 100`
+4. Calcular racha: conteo de resultados consecutivos iguales
+5. Ajustar probabilidades base con peso del 30%
 
 ---
 
-*Ver documentación técnica completa en `/docs/MOTOR_PRONOSTICOS.md`*
+*Ver documentación completa en `/docs/MOTOR_PRONOSTICOS.md`*

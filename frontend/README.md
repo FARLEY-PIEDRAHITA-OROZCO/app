@@ -10,12 +10,7 @@
 ## Instalación
 
 ```bash
-# Instalar dependencias
 yarn install
-
-# Configurar variables de entorno
-cp .env.example .env
-# Editar .env con la URL del backend
 ```
 
 ## Configuración
@@ -28,11 +23,8 @@ REACT_APP_BACKEND_URL=http://localhost:8001
 ## Ejecución
 
 ```bash
-# Desarrollo
-yarn start
-
-# Build de producción
-yarn build
+yarn start    # Desarrollo
+yarn build    # Producción
 ```
 
 ## Estructura
@@ -44,11 +36,12 @@ src/
 ├── index.css                 # Estilos globales
 ├── components/
 │   ├── Layout.jsx            # Layout con sidebar
-│   ├── SeasonSelector.jsx    # 🆕 Selector de temporadas
+│   ├── LeagueSelector.jsx    # 🆕 Selector de ligas
+│   ├── SeasonSelector.jsx    # Selector de temporadas
 │   └── ui/                   # Componentes UI (shadcn)
 └── pages/
-    ├── Dashboard.jsx         # Página principal (Vista Global/Temporada)
-    ├── Predictions.jsx       # Generador de pronósticos
+    ├── Dashboard.jsx         # Vista global/por temporada
+    ├── Predictions.jsx       # 🆕 Con Over/Under y forma
     ├── Classification.jsx    # Tabla de posiciones
     ├── TeamStats.jsx         # Estadísticas por equipo
     ├── Matches.jsx           # Listado de partidos
@@ -57,100 +50,111 @@ src/
 
 ## Componentes Principales
 
-### SeasonSelector
+### LeagueSelector 🆕
 
-Componente reutilizable para seleccionar temporadas.
+Selector dinámico de ligas disponibles.
 
-**Props:**
-| Prop | Tipo | Default | Descripción |
-|------|------|---------|-------------|
-| `ligaId` | string | `'SPAIN_LA_LIGA'` | ID de la liga |
-| `value` | string | - | season_id seleccionado |
-| `onChange` | function | - | Callback al cambiar |
-| `showLabel` | boolean | `true` | Mostrar etiqueta |
-| `disabled` | boolean | `false` | Deshabilitar selector |
-
-**Uso:**
 ```jsx
-import SeasonSelector from '../components/SeasonSelector';
+import LeagueSelector from '../components/LeagueSelector';
 
-const [seasonId, setSeasonId] = useState('');
+const [ligaId, setLigaId] = useState('');
 
-<SeasonSelector 
-  ligaId="SPAIN_LA_LIGA"
-  value={seasonId}
-  onChange={setSeasonId}
+<LeagueSelector 
+  value={ligaId}
+  onChange={setLigaId}
+  showLabel={true}         // Mostrar etiqueta "Liga"
+  showAllOption={false}    // Opción "Todas las ligas"
 />
 ```
 
-### Páginas
+### SeasonSelector
 
-| Página | Ruta | Descripción |
-|--------|------|-------------|
-| Dashboard | `/` | Vista general con toggle Global/Temporada |
-| Predictions | `/predictions` | Generador de pronósticos |
-| Classification | `/classification` | Tabla de posiciones por temporada |
-| TeamStats | `/teams` | Estadísticas detalladas por equipo |
-| Matches | `/matches` | Listado de partidos con filtros |
-| Scraping | `/scraping` | Extracción de datos de API-Football |
-
-## Rutas de la Aplicación
+Selector de temporadas que carga dinámicamente según la liga.
 
 ```jsx
-// App.js
-<Routes>
-  <Route path="/" element={<Layout />}>
-    <Route index element={<Dashboard />} />
-    <Route path="predictions" element={<Predictions />} />
-    <Route path="classification" element={<Classification />} />
-    <Route path="teams" element={<TeamStats />} />
-    <Route path="matches" element={<Matches />} />
-    <Route path="scraping" element={<Scraping />} />
-  </Route>
-</Routes>
+import SeasonSelector from '../components/SeasonSelector';
+
+const [ligaId, setLigaId] = useState('');
+const [seasonId, setSeasonId] = useState('');
+
+<SeasonSelector 
+  ligaId={ligaId}          // Liga de la cual cargar temporadas
+  value={seasonId}
+  onChange={setSeasonId}
+  showLabel={true}
+/>
 ```
 
-## Integración con Backend
+**Importante:** Cuando `ligaId` cambia, el selector automáticamente:
+1. Carga las temporadas de esa liga
+2. Resetea el valor si la temporada anterior no existe en la nueva liga
 
-Todas las llamadas API usan la variable de entorno `REACT_APP_BACKEND_URL`:
+### Uso Combinado (Patrón Recomendado)
 
-```javascript
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+```jsx
+const [ligaId, setLigaId] = useState('');
+const [seasonId, setSeasonId] = useState('');
 
-// Ejemplo: Obtener estadísticas por temporada
-const response = await axios.get(`${API}/stats?season_id=${seasonId}`);
+const handleLigaChange = (newLigaId) => {
+  setLigaId(newLigaId);
+  setSeasonId(''); // Reset temporada al cambiar liga
+};
+
+<LeagueSelector value={ligaId} onChange={handleLigaChange} />
+<SeasonSelector ligaId={ligaId} value={seasonId} onChange={setSeasonId} />
 ```
+
+## Páginas
+
+### Dashboard (`/`)
+- Vista Global: estadísticas de todas las ligas
+- Vista Por Temporada: filtrado por liga y temporada
+
+### Predictions (`/predictions`)
+🆕 **Nuevas funcionalidades:**
+- Selector de liga y temporada
+- Forma reciente (últimos 5 partidos)
+- Over/Under 1.5, 2.5, 3.5 goles
+- Goles esperados por equipo
+- Pronósticos para TC, 1MT, 2MT
+
+### Classification (`/classification`)
+- Tabla de posiciones por temporada
+- Selector de tipo de tiempo
+- Leyenda de posiciones (Champions, Europa, Descenso)
+
+### TeamStats (`/teams`)
+- Estadísticas detalladas por equipo
+- General, Local, Visitante
+- Para los 3 tiempos
+
+### Matches (`/matches`)
+- Listado de partidos con filtros
+- Exportación CSV/JSON
+- Paginación
+
+### Scraping (`/scraping`)
+- Extracción de datos de API-Football
+- Selector de liga predefinida (IDs populares)
+- Panel de exportación con filtros
 
 ## Endpoints Usados
 
 | Página | Endpoint | Método |
 |--------|----------|--------|
+| Todas | `/api/leagues` | GET |
+| Todas | `/api/seasons` | GET |
 | Dashboard | `/api/stats` | GET |
-| Dashboard | `/api/stats?season_id=X` | GET |
 | Predictions | `/api/prediction/generate` | POST |
-| Predictions | `/api/prediction/teams?season_id=X` | GET |
-| Classification | `/api/prediction/classification?season_id=X` | GET |
-| TeamStats | `/api/prediction/teams?season_id=X` | GET |
+| Predictions | `/api/prediction/teams` | GET |
+| Classification | `/api/prediction/classification` | GET |
+| TeamStats | `/api/prediction/teams` | GET |
+| TeamStats | `/api/prediction/team/{nombre}` | GET |
 | Matches | `/api/matches/search` | POST |
 | Matches | `/api/export` | POST |
-| Scraping | `/api/scrape-league` | POST |
-| Todos | `/api/seasons` | GET |
-
-## Estilos
-
-- CSS custom properties para theming
-- Tema oscuro por defecto
-- Componentes de shadcn/ui en `/components/ui/`
-
-## Scripts Disponibles
-
-| Comando | Descripción |
-|---------|-------------|
-| `yarn start` | Inicia servidor de desarrollo en puerto 3000 |
-| `yarn build` | Build de producción |
-| `yarn test` | Ejecuta tests |
+| Scraping | `/api/scrape/start` | POST |
+| Scraping | `/api/scrape/status` | GET |
 
 ---
 
-*Ver documentación principal en `/app/README.md`*
+*Ver documentación principal en `/README.md`*

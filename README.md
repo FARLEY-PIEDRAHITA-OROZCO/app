@@ -13,13 +13,21 @@ Convierte la lógica compleja del Excel (526,550+ fórmulas) en una aplicación 
 
 ---
 
-## 🆕 Novedades v3.0.1 (Diciembre 2024)
+## 🆕 Novedades v3.1.0 (Diciembre 2024)
 
-- ✅ **Sistema de Temporadas (`season_id`):** Filtrado completo por temporada en todas las páginas
-- ✅ **Selector de Temporada:** Componente reutilizable en Dashboard, Clasificación, Equipos, Partidos
-- ✅ **Dashboard Mejorado:** Toggle Vista Global / Por Temporada
-- ✅ **Exportación por Temporada:** CSV/JSON filtrado por `season_id`
-- ✅ **Documentación Completa:** Guías técnicas detalladas
+### Nuevas Funcionalidades
+- ✅ **Sistema Multi-Liga:** Soporte completo para múltiples ligas (La Liga, Premier League, Serie A, etc.)
+- ✅ **Over/Under Goles:** Predicciones de Over/Under 1.5, 2.5 y 3.5 goles
+- ✅ **Goles Esperados:** Cálculo de goles esperados por equipo usando Poisson
+- ✅ **Forma Reciente:** Análisis de los últimos 5 partidos de cada equipo
+- ✅ **Ajuste por Forma:** Las probabilidades se ajustan según el rendimiento reciente (30%)
+- ✅ **Selector de Liga:** Nuevo componente para cambiar entre ligas
+- ✅ **Exportación de Datos:** Exportar datos para uso local
+
+### Correcciones
+- ✅ El endpoint `/prediction/generate` ahora usa correctamente `season_id`
+- ✅ El endpoint `/prediction/teams` filtra correctamente por liga
+- ✅ El endpoint `/prediction/build-stats` extrae `liga_id` del `season_id`
 
 ---
 
@@ -41,10 +49,9 @@ cd app
 ### Paso 2: Configurar Backend
 
 ```bash
-# Ir al directorio backend
 cd backend
 
-# Crear entorno virtual (recomendado)
+# Crear entorno virtual
 python -m venv venv
 
 # Activar entorno virtual
@@ -62,59 +69,44 @@ pip install -r requirements.txt
 Crea o edita el archivo `backend/.env`:
 
 ```env
-# MongoDB - Usa tu conexión local o Atlas
 MONGO_URL=mongodb://localhost:27017
-DB_NAME=football_database
-
-# API Football (obtén tu key en https://www.api-football.com/)
+DB_NAME=test_database
 API_FOOTBALL_KEY=tu_api_key_aqui
 ```
 
-**Nota:** Si usas MongoDB Atlas, el formato es:
-```env
-MONGO_URL=mongodb+srv://usuario:password@cluster.xxxxx.mongodb.net/?retryWrites=true&w=majority
-```
+### Paso 4: Importar Datos (Opcional pero Recomendado)
 
-### Paso 4: Configurar Frontend
+Si tienes los archivos de exportación de datos:
 
 ```bash
-# Ir al directorio frontend
-cd ../frontend
+cd backend
+python import_data.py
+```
 
-# Instalar dependencias
+Esto importará:
+- La Liga 2023-24 (380 partidos, 20 equipos)
+- Premier League 2022-23 (380 partidos, 20 equipos)
+
+### Paso 5: Configurar Frontend
+
+```bash
+cd frontend
 yarn install
 ```
 
-### Paso 5: Configurar Variables de Entorno (Frontend)
-
-Crea o edita el archivo `frontend/.env`:
-
+Archivo `frontend/.env`:
 ```env
 REACT_APP_BACKEND_URL=http://localhost:8001
 ```
 
----
-
-## ▶️ Ejecución
-
-### Iniciar Backend
+### Paso 6: Iniciar la Aplicación
 
 ```bash
+# Terminal 1 - Backend
 cd backend
-
-# Activar entorno virtual si no está activo
-# Windows: venv\Scripts\activate
-# Linux/Mac: source venv/bin/activate
-
-# Iniciar servidor (puerto 8001)
 uvicorn server:app --host 0.0.0.0 --port 8001 --reload
-```
 
-### Iniciar Frontend
-
-En otra terminal:
-
-```bash
+# Terminal 2 - Frontend
 cd frontend
 yarn start
 ```
@@ -126,56 +118,25 @@ La aplicación estará disponible en:
 
 ---
 
-## 🔧 Primer Uso
-
-### 1. Construir Estadísticas
-
-Antes de generar pronósticos, debes construir las estadísticas:
-
-```bash
-# Usando season_id (recomendado)
-curl -X POST "http://localhost:8001/api/prediction/build-stats" \
-  -H "Content-Type: application/json" \
-  -d '{"season_id": "SPAIN_LA_LIGA_2023-24"}'
-
-# O usando liga_id y temporada (legacy)
-curl -X POST "http://localhost:8001/api/prediction/build-stats" \
-  -H "Content-Type: application/json" \
-  -d '{"liga_id": "SPAIN_LA_LIGA", "temporada": 2023}'
-```
-
-O desde la interfaz web: **Pronósticos > Generar Pronóstico**
-
-### 2. Extraer Datos (Opcional)
-
-Si necesitas datos frescos de la API:
-
-1. Ve a **Datos > Extracción** en la interfaz web
-2. Configura la temporada y límite de ligas
-3. Haz clic en "Iniciar Extracción"
-
-**Nota:** El plan gratuito de API-Football tiene límites de llamadas.
-
----
-
 ## 📁 Estructura del Proyecto
 
 ```
 app/
 ├── README.md                    # Esta documentación
+├── data_export/                 # Datos exportados para uso local
+│   ├── football_matches.json    # Partidos (760)
+│   ├── team_statistics.json     # Estadísticas de equipos (40)
+│   ├── seasons.json             # Temporadas (2)
+│   └── import_data.py           # Script de importación
 ├── docs/
 │   ├── MOTOR_PRONOSTICOS.md     # Documentación técnica del algoritmo
-│   ├── ANALISIS_SEASON_ID.md    # Análisis de implementación season_id
+│   ├── ANALISIS_SEASON_ID.md    # Implementación season_id
 │   └── API_REFERENCE.md         # Referencia completa de la API
 ├── backend/
 │   ├── server.py                # Servidor FastAPI principal
 │   ├── requirements.txt         # Dependencias Python
 │   ├── .env                     # Variables de entorno
-│   ├── migrate_season_id.py     # Script de migración de datos
 │   ├── api_football/            # Módulo de extracción de datos
-│   │   ├── api_client.py        # Cliente API-Football
-│   │   ├── data_transformer.py  # Transformación de datos
-│   │   └── db_manager.py        # Gestor de base de datos
 │   └── prediction_engine/       # Motor de pronósticos PLLA 3.0
 │       ├── config.py            # Umbrales y configuración
 │       ├── models.py            # Modelos Pydantic
@@ -184,20 +145,18 @@ app/
 │       ├── prediction_engine.py # Motor de pronósticos
 │       └── validation.py        # Validador GANA/PIERDE
 └── frontend/
-    ├── package.json             # Dependencias Node.js
-    ├── .env                     # Variables de entorno
-    └── src/
-        ├── App.js               # Componente principal y rutas
-        ├── components/
-        │   ├── Layout.jsx       # Layout con sidebar
-        │   └── SeasonSelector.jsx # Selector de temporadas (NUEVO)
-        └── pages/
-            ├── Dashboard.jsx    # Página principal (Vista Global/Temporada)
-            ├── Predictions.jsx  # Generador de pronósticos
-            ├── Classification.jsx # Tabla de posiciones
-            ├── TeamStats.jsx    # Estadísticas por equipo
-            ├── Matches.jsx      # Listado de partidos
-            └── Scraping.jsx     # Extracción de datos
+    ├── src/
+    │   ├── components/
+    │   │   ├── LeagueSelector.jsx    # 🆕 Selector de ligas
+    │   │   └── SeasonSelector.jsx    # Selector de temporadas
+    │   └── pages/
+    │       ├── Dashboard.jsx         # Vista global/por temporada
+    │       ├── Predictions.jsx       # 🆕 Con Over/Under y forma
+    │       ├── Classification.jsx    # Tabla de posiciones
+    │       ├── TeamStats.jsx         # Estadísticas por equipo
+    │       ├── Matches.jsx           # Listado de partidos
+    │       └── Scraping.jsx          # Extracción de datos
+    └── package.json
 ```
 
 ---
@@ -205,72 +164,62 @@ app/
 ## 🎯 Funcionalidades
 
 ### Motor de Pronósticos
-- ✅ **Pronóstico Principal:** L (Local) / E (Empate) / V (Visitante)
-- ✅ **Doble Oportunidad:** 1X / X2 / 12
-- ✅ **Ambos Marcan:** SI / NO
-- ✅ **Tres Tiempos:** Completo (90min), 1er Tiempo, 2do Tiempo
-- ✅ **Clasificación:** Tablas de posiciones por liga y temporada
-- ✅ **Estadísticas:** Por equipo, local y visitante
 
-### Sistema de Temporadas
-- ✅ **`season_id`:** Identificador único por temporada (ej: `SPAIN_LA_LIGA_2023-24`)
-- ✅ **Selector de Temporada:** Componente reutilizable en todas las páginas
-- ✅ **Filtrado por Temporada:** Dashboard, Clasificación, Equipos, Partidos
-- ✅ **Exportación Filtrada:** CSV/JSON por temporada
-- ✅ **Compatibilidad Legacy:** Soporte para `liga_id` + `temporada`
+| Funcionalidad | Descripción |
+|--------------|-------------|
+| **Pronóstico Principal** | L (Local) / E (Empate) / V (Visitante) |
+| **Doble Oportunidad** | 1X / X2 / 12 |
+| **Ambos Marcan** | SI / NO |
+| **Over/Under 1.5** | 🆕 Predicción con probabilidad |
+| **Over/Under 2.5** | 🆕 Predicción con probabilidad |
+| **Over/Under 3.5** | 🆕 Predicción con probabilidad |
+| **Goles Esperados** | 🆕 Local, Visitante, Total |
+| **Forma Reciente** | 🆕 Últimos 5 partidos (V/E/D) |
+| **Tres Tiempos** | Completo, 1er Tiempo, 2do Tiempo |
 
-### Interfaz Web
-- ✅ Dashboard con Vista Global y Por Temporada
-- ✅ Generador interactivo de pronósticos
-- ✅ Tablas de clasificación con selector de tiempo y temporada
-- ✅ Visualización de estadísticas por equipo
-- ✅ Historial de partidos con paginación
-- ✅ Módulo de extracción de datos
-- ✅ Exportación CSV/JSON
+### Sistema Multi-Liga
+
+| Liga | ID API-Football | Soporte |
+|------|-----------------|--------|
+| La Liga (España) | 140 | ✅ Completo |
+| Premier League (Inglaterra) | 39 | ✅ Completo |
+| Serie A (Italia) | 135 | ✅ Disponible |
+| Bundesliga (Alemania) | 78 | ✅ Disponible |
+| Ligue 1 (Francia) | 61 | ✅ Disponible |
+| Liga MX (México) | 262 | ✅ Disponible |
 
 ---
 
-## 🔌 API Endpoints
-
-### Temporadas (NUEVO)
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/seasons` | Lista de temporadas disponibles |
-| GET | `/api/seasons/{season_id}` | Detalle de una temporada |
+## 🔌 API Endpoints Principales
 
 ### Pronósticos
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| POST | `/api/prediction/build-stats` | Construye estadísticas de equipos |
-| GET | `/api/prediction/classification?season_id=X` | Tabla de clasificación |
-| POST | `/api/prediction/generate` | **Genera pronóstico** |
-| GET | `/api/prediction/team/{nombre}?season_id=X` | Stats de un equipo |
-| POST | `/api/prediction/validate` | Valida pronóstico vs resultado |
-| GET | `/api/prediction/teams?season_id=X` | Lista de equipos |
-| GET | `/api/prediction/config` | Configuración del algoritmo |
-| GET | `/api/prediction/effectiveness` | Métricas de efectividad |
+| POST | `/api/prediction/generate` | Genera pronóstico completo |
+| POST | `/api/prediction/build-stats` | Construye estadísticas |
+| GET | `/api/prediction/teams?season_id=X` | Lista equipos |
+| GET | `/api/prediction/classification?season_id=X` | Tabla de posiciones |
 
 ### Datos
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| GET | `/api/stats?season_id=X` | Estadísticas generales (filtrable) |
 | GET | `/api/leagues` | Lista de ligas |
-| POST | `/api/matches/search` | Buscar partidos con filtros |
+| GET | `/api/seasons` | Lista de temporadas |
+| GET | `/api/stats?season_id=X` | Estadísticas generales |
 | POST | `/api/export` | Exportar datos CSV/JSON |
-| POST | `/api/scrape-league` | Iniciar extracción |
 
-### Ejemplo: Generar Pronóstico con season_id
+### Ejemplo: Generar Pronóstico
 
 ```bash
 curl -X POST "http://localhost:8001/api/prediction/generate" \
   -H "Content-Type: application/json" \
   -d '{
-    "equipo_local": "Barcelona",
-    "equipo_visitante": "Real Madrid",
-    "season_id": "SPAIN_LA_LIGA_2023-24"
+    "equipo_local": "Manchester City",
+    "equipo_visitante": "Arsenal",
+    "liga_id": "ENGLAND_PREMIER_LEAGUE",
+    "season_id": "ENGLAND_PREMIER_LEAGUE_2022-23"
   }'
 ```
 
@@ -279,22 +228,25 @@ curl -X POST "http://localhost:8001/api/prediction/generate" \
 {
   "success": true,
   "pronostico": {
-    "equipo_local": "Barcelona",
-    "equipo_visitante": "Real Madrid",
-    "season_id": "SPAIN_LA_LIGA_2023-24",
+    "equipo_local": "Manchester City",
+    "equipo_visitante": "Arsenal",
+    "season_id": "ENGLAND_PREMIER_LEAGUE_2022-23",
     "tiempo_completo": {
-      "pronostico": "E",
+      "pronostico": "L",
       "doble_oportunidad": "1X",
       "ambos_marcan": "SI",
-      "probabilidades": {
-        "local": 36.88,
-        "empate": 27.85,
-        "visita": 35.27
+      "probabilidades": {"local": 48.5, "empate": 26.3, "visita": 25.2},
+      "over_under": {
+        "over_15": {"prediccion": "OVER", "probabilidad": 92.1},
+        "over_25": {"prediccion": "OVER", "probabilidad": 80.3},
+        "over_35": {"prediccion": "OVER", "probabilidad": 62.5}
       },
-      "confianza": 42.54
+      "goles_esperados": {"local": 2.1, "visitante": 1.5, "total": 3.6}
     },
-    "primer_tiempo": { ... },
-    "segundo_tiempo": { ... }
+    "forma_reciente": {
+      "local": {"ultimos_5": ["V","V","V","V","E"], "rendimiento": 86.67},
+      "visitante": {"ultimos_5": ["V","V","V","V","V"], "rendimiento": 100.0}
+    }
   }
 }
 ```
@@ -303,152 +255,79 @@ curl -X POST "http://localhost:8001/api/prediction/generate" \
 
 ## ⚙️ Configuración del Algoritmo
 
-### Umbrales (backend/prediction_engine/config.py)
+### Umbrales Principales (config.py)
 
 | Parámetro | Valor | Descripción |
 |-----------|-------|-------------|
 | `PROB_LOCAL_MIN` | 43% | Mínimo para pronosticar LOCAL |
 | `PROB_LOCAL_MAX` | 69.5% | Máximo antes de "muy favorito" |
 | `PROB_EMPATE_MAX` | 20% | Máximo de empate para decidir |
-| `SUMA_PROB_MIN` | 116% | Mínimo para doble oportunidad "12" |
 | `UMBRAL_AMBOS_MARCAN` | 45% | Umbral para SI/NO |
-
-### Factores de Rendimiento
-
-| Factor | Rendimiento | Descripción |
-|--------|-------------|-------------|
-| 5 | > 80% | Equipo dominante |
-| 4 | 60-80% | Equipo fuerte |
-| 3 | 40-60% | Equipo promedio |
-| 2 | 20-40% | Equipo débil |
-| 1 | < 20% | Equipo muy débil |
+| `PESO_FORMA_RECIENTE` | 30% | 🆕 Peso de forma vs temporada |
+| `PARTIDOS_FORMA_RECIENTE` | 5 | 🆕 Últimos N partidos |
 
 ---
 
-## 🗄️ Base de Datos
+## 📊 Datos Disponibles
 
-### Colecciones MongoDB
+El proyecto incluye datos pre-exportados en `/data_export/`:
 
-| Colección | Descripción |
-|-----------|-------------|
-| `football_matches` | Partidos históricos con `season_id` y `match_id` |
-| `team_statistics` | Estadísticas por equipo y temporada |
-| `predictions` | Pronósticos generados |
-| `validations` | Validaciones post-partido |
+| Liga | Temporada | Partidos | Equipos |
+|------|-----------|----------|--------|
+| La Liga (España) | 2023-24 | 380 | 20 |
+| Premier League (Inglaterra) | 2022-23 | 380 | 20 |
+| **Total** | | **760** | **40** |
 
-### Schema de Partidos
-
-```javascript
-{
-  "match_id": "SPAIN_LA_LIGA_2023-24_12345",    // ID único
-  "season_id": "SPAIN_LA_LIGA_2023-24",         // Temporada
-  "liga_id": "SPAIN_LA_LIGA",
-  "equipo_local": "Barcelona",
-  "equipo_visitante": "Real Madrid",
-  "fecha_partido": "2023-10-28T20:00:00Z",
-  "goles_local_TR": 2,
-  "goles_visitante_TR": 1,
-  "goles_local_1MT": 1,
-  "goles_visitante_1MT": 0,
-  "ronda": "Regular Season - 10"
-}
-```
-
----
-
-## ❓ Solución de Problemas
-
-### Error: "No module named 'motor'"
-
-Asegúrate de haber instalado todas las dependencias:
+Para importar estos datos en tu MongoDB local:
 ```bash
 cd backend
-pip install -r requirements.txt
-```
-
-### Error: "Connection refused" en MongoDB
-
-1. Verifica que MongoDB esté corriendo
-2. Revisa la URL en `backend/.env`
-3. Si usas Atlas, verifica que tu IP esté en la whitelist
-
-### Error: "API account suspended"
-
-Tu cuenta de API-Football puede estar suspendida. Verifica en:
-https://dashboard.api-football.com
-
-### El frontend no conecta con el backend
-
-1. Verifica que `REACT_APP_BACKEND_URL` en `frontend/.env` sea correcto
-2. Asegúrate de que el backend esté corriendo en el puerto 8001
-3. Reinicia el frontend después de cambiar el `.env`
-
-### Error 404 al cargar estadísticas
-
-Las estadísticas deben construirse primero:
-```bash
-curl -X POST "http://localhost:8001/api/prediction/build-stats" \
-  -H "Content-Type: application/json" \
-  -d '{"season_id": "SPAIN_LA_LIGA_2023-24"}'
+python import_data.py
 ```
 
 ---
 
-## 📊 Arquitectura
+## 🛠️ Solución de Problemas
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│    FRONTEND     │     │     BACKEND     │     │    DATABASE     │
-│    (React)      │ ←→  │    (FastAPI)    │ ←→  │    (MongoDB)    │
-│    Port 3000    │     │    Port 8001    │     │                 │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-         │                      │                       │
-         │              ┌───────┴───────┐               │
-         │              │   MODULES     │               │
-         │              │               │               │
-         │              │ ┌───────────┐ │               │
-         │              │ │ api_      │ │←──── API-Football
-         │              │ │ football/ │ │
-         │              │ └───────────┘ │
-         │              │               │
-         │              │ ┌───────────┐ │
-         │              │ │ prediction│ │
-         │              │ │ _engine/  │ │
-         │              │ └───────────┘ │
-         │              └───────────────┘
-         │
-    SeasonSelector ←── Filtrado por temporada en todas las páginas
-```
+### "No hay equipos disponibles"
+1. Verifica que MongoDB esté corriendo
+2. Importa los datos: `python import_data.py`
+3. O extrae datos nuevos desde la página de Extracción
+
+### "Error de conexión al backend"
+1. Verifica que el backend esté corriendo en puerto 8001
+2. Revisa `REACT_APP_BACKEND_URL` en `frontend/.env`
+
+### "API-Football: Account suspended"
+1. Verifica tu API key en https://dashboard.api-football.com
+2. El plan gratuito tiene límite de 100 llamadas/día
 
 ---
 
 ## 📚 Documentación Adicional
 
-- **[Motor de Pronósticos](/docs/MOTOR_PRONOSTICOS.md)** - Algoritmo detallado, fórmulas y umbrales
-- **[Análisis Season ID](/docs/ANALISIS_SEASON_ID.md)** - Implementación del sistema de temporadas
-- **[Referencia API](/docs/API_REFERENCE.md)** - Documentación completa de endpoints
+- **[Motor de Pronósticos](/docs/MOTOR_PRONOSTICOS.md)** - Algoritmo detallado
+- **[Referencia API](/docs/API_REFERENCE.md)** - Todos los endpoints
+- **[Análisis Season ID](/docs/ANALISIS_SEASON_ID.md)** - Sistema de temporadas
 
 ---
 
-## 📝 Versiones
+## 📝 Changelog
 
-| Componente | Versión |
-|------------|--------|
-| Sistema PLLA | 3.0.1 |
-| Algoritmo | v1.0.0 |
-| API | v1.1.0 |
-| Frontend | v1.1.0 |
+### v3.1.0 (Diciembre 2024)
+- Sistema multi-liga completo
+- Over/Under goles con Poisson
+- Goles esperados
+- Forma reciente (últimos 5)
+- Ajuste de probabilidades por forma
+- Exportación de datos para uso local
+- Corrección de bugs en endpoints
 
-### Changelog
+### v3.0.1 (Diciembre 2024)
+- Implementación de `season_id`
+- Selector de temporada
+- Documentación mejorada
 
-**v3.0.1 (Diciembre 2024)**
-- Implementación completa de `season_id` en backend y frontend
-- Nuevo componente `SeasonSelector`
-- Dashboard con Vista Global / Por Temporada
-- Exportación filtrada por temporada
-- Documentación actualizada
-
-**v3.0.0 (Diciembre 2024)**
+### v3.0.0 (Diciembre 2024)
 - Versión inicial del Motor PLLA 3.0
 - Sistema de pronósticos completo
 - Integración con API-Football
