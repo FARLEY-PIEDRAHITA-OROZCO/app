@@ -541,21 +541,23 @@ async def generate_prediction(request: PronosticoRequest):
     """
     Genera un pronóstico para un partido.
     
-    **Proceso:**
-    1. Obtiene estadísticas de ambos equipos
-    2. Calcula probabilidades (L/E/V)
-    3. Aplica algoritmo de decisión
-    4. Genera doble oportunidad y ambos marcan
+    Incluye:
+    - Pronóstico principal (L/E/V) para TC, 1MT, 2MT
+    - Doble oportunidad (1X, X2, 12)
+    - Ambos marcan (SI/NO)
+    - Over/Under goles (1.5, 2.5, 3.5)
+    - Goles esperados
+    - Forma reciente de los equipos
     
-    **Retorna:**
-    - Pronóstico para tiempo completo, primer tiempo y segundo tiempo
+    Usa season_id para obtener estadísticas de la temporada correcta.
     """
     try:
         pronostico = await prediction_engine.generar_pronostico(
             equipo_local=request.equipo_local,
             equipo_visitante=request.equipo_visitante,
             liga_id=request.liga_id,
-            temporada=request.temporada
+            temporada=request.temporada,
+            season_id=request.season_id  # ← AHORA PASAMOS season_id
         )
         
         return {
