@@ -231,6 +231,78 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: Lista de equipos funciona correctamente. Retorna 20 equipos de La Liga 2023 con nombre, puntos, partidos_jugados, rendimiento ordenados por puntos descendente."
 
+  - task: "Seasons List Endpoint - GET /api/seasons"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Endpoint de temporadas funciona correctamente. Retorna lista de temporadas con season_id formato 'SPAIN_LA_LIGA_2023-24', incluye total_partidos y información básica de cada temporada."
+
+  - task: "Season Detail Endpoint - GET /api/seasons/{season_id}"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Detalle de temporada funciona correctamente. Retorna información completa para season_id='SPAIN_LA_LIGA_2023-24' incluyendo lista de 20 equipos y estadísticas de partidos."
+
+  - task: "Classification with season_id parameter"
+    implemented: true
+    working: true
+    file: "prediction_engine/classification.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Clasificación con parámetro season_id funciona correctamente. Acepta ?season_id=SPAIN_LA_LIGA_2023-24&tipo_tiempo=completo, retorna respuesta con season_id incluido y tabla de 20 equipos."
+
+  - task: "Teams with season_id parameter"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Lista de equipos con season_id funciona correctamente. Acepta ?season_id=SPAIN_LA_LIGA_2023-24, retorna 20 equipos con puntos y season_id en respuesta."
+
+  - task: "Prediction generation with season_id"
+    implemented: true
+    working: true
+    file: "prediction_engine/prediction_engine.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Generación de pronósticos con season_id funciona correctamente. Acepta season_id en POST body junto con equipos, genera pronóstico completo para Barcelona vs Real Madrid."
+
+  - task: "Backward compatibility for legacy endpoints"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Compatibilidad hacia atrás funciona correctamente. Endpoints legacy con liga_id y temporada siguen funcionando: /api/prediction/classification?liga_id=SPAIN_LA_LIGA&temporada=2023 y /api/prediction/teams?liga_id=SPAIN_LA_LIGA&temporada=2023."
+
 frontend:
   - task: "Frontend básico existente (Dashboard, Matches, Scraping)"
     implemented: true
