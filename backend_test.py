@@ -797,7 +797,10 @@ class PredictionEngineTest:
             self.test_11_classification_with_season_id,
             self.test_12_teams_with_season_id,
             self.test_13_prediction_with_season_id,
-            self.test_14_backward_compatibility
+            self.test_14_backward_compatibility,
+            # New stats endpoint tests
+            self.test_15_stats_global_view,
+            self.test_16_stats_season_view
         ]
         
         passed = 0
