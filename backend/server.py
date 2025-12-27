@@ -72,7 +72,10 @@ class ScrapeRequest(BaseModel):
 class ExportRequest(BaseModel):
     format: str = "csv"
     liga_id: Optional[str] = None
+    temporada: Optional[int] = None
+    season_id: Optional[str] = None
     limit: int = 1000
+    include_fields: Optional[List[str]] = None  # Campos específicos a exportar
 
 # Routes
 @api_router.get("/")
