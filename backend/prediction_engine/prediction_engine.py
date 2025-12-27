@@ -827,7 +827,7 @@ class PredictionEngine:
             try:
                 p_k = (media ** k) * math.exp(-media) / math.factorial(k)
                 prob_under += p_k
-            except:
+            except (OverflowError, ValueError):
                 break
             k += 1
         
