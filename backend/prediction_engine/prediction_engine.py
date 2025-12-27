@@ -658,6 +658,184 @@ class PredictionEngine:
         else:
             return AmbosMarcamEnum.NO.value
     
+    def _ajustar_por_forma_reciente(
+        self,
+        probabilidades: Probabilidades,
+        forma_local: Dict[str, Any],
+        forma_visitante: Dict[str, Any]
+    ) -> Probabilidades:
+        """
+        Ajusta las probabilidades basándose en la forma reciente.
+        
+        Parámetros:
+        -----------
+        probabilidades : Probabilidades
+            Probabilidades base calculadas
+        forma_local : dict
+            Forma reciente del equipo local
+        forma_visitante : dict
+            Forma reciente del equipo visitante
+        
+        Retorna:
+        --------
+        Probabilidades
+            Probabilidades ajustadas por forma reciente
+        """
+        peso = Umbrales.PESO_FORMA_RECIENTE  # 0.3 por defecto
+        
+        # Obtener rendimientos de forma reciente
+        rend_forma_local = forma_local.get('rendimiento', 50.0)
+        rend_forma_visitante = forma_visitante.get('rendimiento', 50.0)
+        
+        # Normalizar a factor de ajuste (-1 a 1)
+        factor_local = (rend_forma_local - 50) / 50  # -1 si 0%, +1 si 100%
+        factor_visitante = (rend_forma_visitante - 50) / 50
+        
+        # Ajustar probabilidades
+        p_local = probabilidades.porcentaje_local
+        p_empate = probabilidades.porcentaje_empate
+        p_visita = probabilidades.porcentaje_visita
+        
+        # Aplicar ajustes ponderados
+        ajuste_local = factor_local * peso * 10  # Máximo ±3% de ajuste
+        ajuste_visitante = factor_visitante * peso * 10
+        
+        p_local_ajustado = max(5, min(90, p_local + ajuste_local))
+        p_visita_ajustado = max(5, min(90, p_visita + ajuste_visitante))
+        
+        # Recalcular empate para que sumen 100
+        p_empate_ajustado = 100 - p_local_ajustado - p_visita_ajustado
+        p_empate_ajustado = max(5, min(50, p_empate_ajustado))
+        
+        # Normalizar para que sumen exactamente 100
+        total = p_local_ajustado + p_empate_ajustado + p_visita_ajustado
+        p_local_ajustado = p_local_ajustado / total * 100
+        p_empate_ajustado = p_empate_ajustado / total * 100
+        p_visita_ajustado = p_visita_ajustado / total * 100
+        
+        return Probabilidades(
+            porcentaje_local=round(p_local_ajustado, 2),
+            porcentaje_empate=round(p_empate_ajustado, 2),
+            porcentaje_visita=round(p_visita_ajustado, 2)
+        )
+    
+    def _calcular_over_under(
+        self,
+        stats_local: EstadisticasEquipo,
+        stats_visitante: EstadisticasEquipo,
+        forma_local: Dict[str, Any],
+        forma_visitante: Dict[str, Any],
+        tipo_tiempo: TipoTiempo
+    ) -> Tuple[Dict[str, Any], Dict[str, float]]:
+        """
+        Calcula predicciones de Over/Under y goles esperados.
+        
+        Parámetros:
+        -----------
+        stats_local : EstadisticasEquipo
+            Estadísticas del equipo local
+        stats_visitante : EstadisticasEquipo
+            Estadísticas del equipo visitante
+        forma_local : dict
+            Forma reciente del local
+        forma_visitante : dict
+            Forma reciente del visitante
+        tipo_tiempo : TipoTiempo
+            Tipo de tiempo (TC, 1MT, 2MT)
+        
+        Retorna:
+        --------
+        Tuple[Dict, Dict]
+            (over_under, goles_esperados)
+        """
+        # Calcular promedios de goles
+        if stats_local.pj_local > 0:
+            avg_gf_local = stats_local.gf_local / stats_local.pj_local
+            avg_gc_local = stats_local.gc_local / stats_local.pj_local
+        else:
+            avg_gf_local = 1.3
+            avg_gc_local = 1.0
+        
+        if stats_visitante.pj_visita > 0:
+            avg_gf_visita = stats_visitante.gf_visita / stats_visitante.pj_visita
+            avg_gc_visita = stats_visitante.gc_visita / stats_visitante.pj_visita
+        else:
+            avg_gf_visita = 0.9
+            avg_gc_visita = 1.5
+        
+        # Goles esperados por equipo
+        # Local: (su promedio goleador + debilidad defensiva rival) / 2
+        goles_local = (avg_gf_local + avg_gc_visita) / 2
+        # Visitante: (su promedio goleador fuera + debilidad defensiva local) / 2
+        goles_visitante = (avg_gf_visita + avg_gc_local) / 2
+        
+        # Ajustar por forma reciente si está disponible
+        if forma_local and forma_visitante:
+            goles_local_forma = forma_local.get('goles_favor_avg', goles_local)
+            goles_visitante_forma = forma_visitante.get('goles_favor_avg', goles_visitante)
+            
+            peso_forma = Umbrales.PESO_FORMA_RECIENTE
+            goles_local = goles_local * (1 - peso_forma) + goles_local_forma * peso_forma
+            goles_visitante = goles_visitante * (1 - peso_forma) + goles_visitante_forma * peso_forma
+        
+        # Ajustar por tipo de tiempo
+        if tipo_tiempo == TipoTiempo.PRIMER_TIEMPO:
+            factor_tiempo = 0.45  # 45% de goles en 1MT típicamente
+        elif tipo_tiempo == TipoTiempo.SEGUNDO_TIEMPO:
+            factor_tiempo = 0.55  # 55% de goles en 2MT típicamente
+        else:
+            factor_tiempo = 1.0
+        
+        goles_local = goles_local * factor_tiempo
+        goles_visitante = goles_visitante * factor_tiempo
+        total_esperado = goles_local + goles_visitante
+        
+        # Calcular probabilidades Over/Under usando distribución de Poisson simplificada
+        over_under = {}
+        
+        for umbral, nombre in [(1.5, "over_15"), (2.5, "over_25"), (3.5, "over_35")]:
+            # Probabilidad aproximada usando media esperada
+            prob_over = self._calcular_prob_over(total_esperado, umbral)
+            prediccion = "OVER" if prob_over > 50 else "UNDER"
+            over_under[nombre] = {
+                "prediccion": prediccion,
+                "probabilidad": round(prob_over if prediccion == "OVER" else 100 - prob_over, 2)
+            }
+        
+        goles_esperados = {
+            "local": round(goles_local, 2),
+            "visitante": round(goles_visitante, 2),
+            "total": round(total_esperado, 2)
+        }
+        
+        return over_under, goles_esperados
+    
+    def _calcular_prob_over(self, media: float, umbral: float) -> float:
+        """
+        Calcula la probabilidad de Over usando aproximación de Poisson.
+        
+        P(X > umbral) ≈ 1 - P(X <= umbral)
+        Usando aproximación simplificada basada en la media.
+        """
+        import math
+        
+        # Probabilidad acumulada P(X <= k) usando Poisson
+        prob_under = 0
+        k = 0
+        umbral_int = int(umbral)
+        
+        while k <= umbral_int:
+            # P(X = k) = (λ^k * e^-λ) / k!
+            try:
+                p_k = (media ** k) * math.exp(-media) / math.factorial(k)
+                prob_under += p_k
+            except:
+                break
+            k += 1
+        
+        prob_over = (1 - prob_under) * 100
+        return max(5, min(95, prob_over))  # Limitar entre 5% y 95%
+    
     def _calcular_confianza(
         self,
         probabilidades: Probabilidades,
