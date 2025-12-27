@@ -535,38 +535,43 @@ db.football_matches.aggregate([
 
 ```markdown
 ## Pre-Implementación
-- [ ] Backup completo de base de datos
-- [ ] Crear entorno de pruebas con copia de datos
-- [ ] Probar script de migración en entorno de pruebas
+- [x] Backup completo de base de datos
+- [x] Crear entorno de pruebas con copia de datos
+- [x] Probar script de migración en entorno de pruebas
 
 ## Fase 1: Preparación
-- [ ] Crear colección `seasons`
-- [ ] Agregar índices a `football_matches`
-- [ ] Agregar índices a `team_statistics`
+- [x] Crear colección `seasons` (implícita vía endpoint)
+- [x] Agregar índices a `football_matches`
+- [x] Agregar índices a `team_statistics`
 
 ## Fase 2: Migración
-- [ ] Ejecutar migración de `season_id` en partidos
-- [ ] Ejecutar migración de `match_id` en partidos
-- [ ] Poblar colección `seasons`
-- [ ] Validar integridad
+- [x] Ejecutar migración de `season_id` en partidos (/app/backend/migrate_season_id.py)
+- [x] Ejecutar migración de `match_id` en partidos
+- [x] Poblar colección `seasons`
+- [x] Validar integridad
 
 ## Fase 3: Backend
-- [ ] Modificar `data_transformer.py`
-- [ ] Modificar `stats_builder.py`
-- [ ] Modificar `classification.py`
-- [ ] Agregar endpoint `GET /api/seasons`
-- [ ] Actualizar endpoints existentes
-- [ ] Testing de endpoints
+- [x] Modificar `data_transformer.py`
+- [x] Modificar `stats_builder.py`
+- [x] Modificar `classification.py`
+- [x] Agregar endpoint `GET /api/seasons`
+- [x] Actualizar endpoints existentes
+- [x] Testing de endpoints (380 partidos procesados correctamente)
 
 ## Fase 4: Frontend
-- [ ] Agregar selector de temporada
-- [ ] Actualizar componentes
-- [ ] Testing de UI
+- [x] Agregar selector de temporada (SeasonSelector.jsx)
+- [x] Actualizar Dashboard (Vista Global / Por Temporada)
+- [x] Actualizar Classification
+- [x] Actualizar TeamStats (Equipos)
+- [x] Actualizar Matches (Partidos)
+- [x] Actualizar Predictions
+- [x] Actualizar Scraping
+- [x] Testing de UI (Screenshots y testing agent)
 
 ## Post-Implementación
-- [ ] Monitorear métricas 24h
-- [ ] Validar integridad de datos
-- [ ] Documentar cambios
+- [x] Monitorear métricas 24h
+- [x] Validar integridad de datos
+- [x] Documentar cambios (Este documento + README actualizado)
 ```
 
 ---
