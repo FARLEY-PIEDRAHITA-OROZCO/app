@@ -693,7 +693,6 @@ class PredictionEngine:
         
         # Ajustar probabilidades
         p_local = probabilidades.porcentaje_local
-        p_empate = probabilidades.porcentaje_empate
         p_visita = probabilidades.porcentaje_visita
         
         # Aplicar ajustes ponderados
