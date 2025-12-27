@@ -303,6 +303,42 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: Compatibilidad hacia atrás funciona correctamente. Endpoints legacy con liga_id y temporada siguen funcionando: /api/prediction/classification?liga_id=SPAIN_LA_LIGA&temporada=2023 y /api/prediction/teams?liga_id=SPAIN_LA_LIGA&temporada=2023."
 
+  - task: "Dashboard with season_id filter"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/Dashboard.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementado Dashboard con toggle Vista Global / Por Temporada. Integra SeasonSelector y muestra estadísticas filtradas por season_id. Nuevo backend endpoint GET /api/stats?season_id= funciona."
+
+  - task: "Stats endpoint with season_id parameter"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Actualizado endpoint GET /api/stats para aceptar parámetro opcional season_id. Cuando se pasa, filtra datos y agrupa por jornada en vez de por liga."
+
+  - task: "Matches page with season_id filter"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/Matches.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Página de Matches ya tiene SeasonSelector integrado. Filtra partidos, permite exportar CSV/JSON con season_id. Screenshots confirman funcionamiento correcto."
+
 frontend:
   - task: "Frontend básico existente (Dashboard, Matches, Scraping)"
     implemented: true
