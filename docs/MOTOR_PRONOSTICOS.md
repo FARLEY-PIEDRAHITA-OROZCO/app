@@ -697,4 +697,109 @@ Para mejorar el sistema:
 
 ---
 
-*Documentación técnica - Motor PLLA v3.0 - Diciembre 2024*
+## 14. Sistema de Temporadas (season_id)
+
+### Concepto
+
+El sistema PLLA 3.0.1 introduce el concepto de `season_id` para identificar y filtrar datos por temporada futbolística de manera precisa.
+
+### Formato del season_id
+
+```
+{LIGA_ID}_{AÑO_INICIO}-{AÑO_FIN}
+
+Ejemplos:
+- SPAIN_LA_LIGA_2023-24
+- ENGLAND_PREMIER_LEAGUE_2024-25
+- ITALY_SERIE_A_2022-23
+```
+
+### Impacto en el Motor de Pronósticos
+
+```python
+# Antes (solo liga_id y temporada)
+await engine.generar_pronostico(
+    equipo_local='Barcelona',
+    equipo_visitante='Real Madrid',
+    liga_id='SPAIN_LA_LIGA',
+    temporada=2023
+)
+
+# Ahora (con season_id - recomendado)
+await engine.generar_pronostico(
+    equipo_local='Barcelona',
+    equipo_visitante='Real Madrid',
+    season_id='SPAIN_LA_LIGA_2023-24'
+)
+```
+
+### Ventajas del season_id
+
+| Característica | Antes | Ahora |
+|----------------|-------|-------|
+| Identificación única | `liga_id` + `temporada` | `season_id` único |
+| Formato fechas | Ambiguo (2023 = 2022-23 o 2023-24?) | Claro (2023-24) |
+| Filtrado | Queries complejas | Query simple por `season_id` |
+| Compatibilidad | - | Mantiene soporte legacy |
+
+### Endpoints Afectados
+
+Todos los endpoints del motor ahora aceptan `season_id`:
+
+```bash
+# Construir estadísticas
+POST /api/prediction/build-stats
+{"season_id": "SPAIN_LA_LIGA_2023-24"}
+
+# Obtener clasificación
+GET /api/prediction/classification?season_id=SPAIN_LA_LIGA_2023-24
+
+# Generar pronóstico
+POST /api/prediction/generate
+{
+  "equipo_local": "Barcelona",
+  "equipo_visitante": "Real Madrid",
+  "season_id": "SPAIN_LA_LIGA_2023-24"
+}
+
+# Listar equipos
+GET /api/prediction/teams?season_id=SPAIN_LA_LIGA_2023-24
+```
+
+### Compatibilidad Hacia Atrás
+
+El sistema mantiene compatibilidad con el formato legacy:
+
+```python
+# Estos dos son equivalentes:
+season_id = "SPAIN_LA_LIGA_2023-24"
+liga_id = "SPAIN_LA_LIGA", temporada = 2023
+
+# El backend construye automáticamente:
+effective_season_id = f"{liga_id}_{temporada}-{temporada+1}"
+```
+
+### Componente Frontend
+
+El frontend incluye un componente `SeasonSelector` reutilizable:
+
+```jsx
+import SeasonSelector from '../components/SeasonSelector';
+
+const [seasonId, setSeasonId] = useState('');
+
+<SeasonSelector 
+  ligaId="SPAIN_LA_LIGA"
+  value={seasonId}
+  onChange={setSeasonId}
+/>
+```
+
+Este componente:
+- Carga automáticamente las temporadas disponibles desde `/api/seasons`
+- Muestra el número de partidos por temporada
+- Auto-selecciona la primera temporada si no hay valor
+
+---
+
+*Documentación técnica - Motor PLLA v3.0.1 - Diciembre 2024*
