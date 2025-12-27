@@ -428,7 +428,10 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus: 
+    - "Multi-league support across all pages"
+    - "LeagueSelector component"
+    - "SeasonSelector dynamic loading based on league"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
