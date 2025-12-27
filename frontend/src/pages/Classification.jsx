@@ -2,15 +2,17 @@
  * Página de Clasificación - Motor PLLA 3.0
  * 
  * Muestra:
- * - Tabla de posiciones
+ * - Selector de liga
  * - Selector de temporada (season_id)
+ * - Tabla de posiciones
  * - Selector de tipo de tiempo (TC, 1MT, 2MT)
  * - Estadísticas por equipo
  */
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trophy, Clock, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { Trophy, Clock, ArrowUp, ArrowDown, Minus, Globe } from 'lucide-react';
+import LeagueSelector from '../components/LeagueSelector';
 import SeasonSelector from '../components/SeasonSelector';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -19,8 +21,9 @@ const API = `${BACKEND_URL}/api`;
 const Classification = () => {
   const [classification, setClassification] = useState(null);
   const [timeType, setTimeType] = useState('completo');
+  const [ligaId, setLigaId] = useState('');
   const [seasonId, setSeasonId] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -28,6 +31,13 @@ const Classification = () => {
       fetchClassification();
     }
   }, [timeType, seasonId]);
+
+  // Cuando cambia la liga, resetear la temporada
+  const handleLigaChange = (newLigaId) => {
+    setLigaId(newLigaId);
+    setSeasonId('');
+    setClassification(null);
+  };
 
   const fetchClassification = async () => {
     try {
@@ -39,7 +49,7 @@ const Classification = () => {
       setClassification(response.data);
     } catch (err) {
       console.error('Error fetching classification:', err);
-      setError('Error cargando clasificación');
+      setError('Error cargando clasificación. Asegúrate de haber construido las estadísticas primero.');
     } finally {
       setLoading(false);
     }
@@ -85,12 +95,18 @@ const Classification = () => {
           alignItems: 'flex-end',
           justifyContent: 'space-between'
         }}>
-          {/* Selector de Temporada */}
-          <SeasonSelector 
-            ligaId="SPAIN_LA_LIGA"
-            value={seasonId}
-            onChange={setSeasonId}
-          />
+          {/* Selectores de Liga y Temporada */}
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <LeagueSelector 
+              value={ligaId}
+              onChange={handleLigaChange}
+            />
+            <SeasonSelector 
+              ligaId={ligaId}
+              value={seasonId}
+              onChange={setSeasonId}
+            />
+          </div>
 
           {/* Selector de Tiempo */}
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -120,6 +136,14 @@ const Classification = () => {
         </div>
       </div>
 
+      {/* Estado: Sin temporada seleccionada */}
+      {!seasonId && (
+        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <Globe size={48} style={{ marginBottom: '1rem', opacity: 0.5, color: 'var(--text-secondary)' }} />
+          <p style={{ color: 'var(--text-secondary)' }}>Selecciona una liga y temporada para ver la clasificación</p>
+        </div>
+      )}
+
       {/* Loading State */}
       {loading && (
         <div style={{ textAlign: 'center', padding: '3rem' }}>
@@ -129,13 +153,13 @@ const Classification = () => {
 
       {/* Error State */}
       {error && !loading && (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#ef4444' }}>
+        <div className="card" style={{ textAlign: 'center', padding: '3rem', color: '#ef4444' }}>
           {error}
         </div>
       )}
 
       {/* Tabla de Clasificación */}
-      {!loading && !error && classification && (
+      {!loading && !error && classification && seasonId && (
         <div className="card" style={{ overflowX: 'auto' }}>
           <div style={{ 
             display: 'flex', 
@@ -148,7 +172,7 @@ const Classification = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Trophy size={20} color="var(--accent)" />
               <h2 style={{ fontSize: '1.1rem', fontWeight: '600' }}>
-                {classification.liga_id?.replace('_', ' ')} - {classification.season_id?.split('_').pop()}
+                {classification.liga_id?.replace(/_/g, ' ')} - {classification.season_id?.split('_').pop()}
               </h2>
             </div>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
