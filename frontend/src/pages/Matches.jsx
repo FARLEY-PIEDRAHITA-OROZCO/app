@@ -1,6 +1,16 @@
+/**
+ * Página de Partidos - Motor PLLA 3.0
+ * 
+ * Consulta y exporta datos de partidos con:
+ * - Filtro por temporada (season_id)
+ * - Filtro por liga, fechas, equipo
+ * - Exportación CSV/JSON
+ */
+
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Download, Filter } from 'lucide-react';
+import { Search, Download, Filter, Calendar } from 'lucide-react';
+import SeasonSelector from '../components/SeasonSelector';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -9,6 +19,7 @@ const Matches = () => {
   const [matches, setMatches] = useState([]);
   const [leagues, setLeagues] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [seasonId, setSeasonId] = useState('');
   const [filters, setFilters] = useState({
     liga_id: '',
     fecha_inicio: '',
@@ -21,8 +32,13 @@ const Matches = () => {
 
   useEffect(() => {
     fetchLeagues();
-    fetchMatches();
   }, []);
+
+  useEffect(() => {
+    if (seasonId) {
+      fetchMatches();
+    }
+  }, [seasonId]);
 
   const fetchLeagues = async () => {
     try {
@@ -36,7 +52,12 @@ const Matches = () => {
   const fetchMatches = async () => {
     setLoading(true);
     try {
-      const response = await axios.post(`${API}/matches/search`, filters);
+      const searchFilters = {
+        ...filters,
+        season_id: seasonId
+      };
+      
+      const response = await axios.post(`${API}/matches/search`, searchFilters);
       setMatches(response.data.matches);
       setPagination({
         total: response.data.total,
@@ -59,20 +80,28 @@ const Matches = () => {
   };
 
   const handleExport = async (format) => {
+    if (!seasonId) {
+      alert('Selecciona una temporada para exportar');
+      return;
+    }
+    
     try {
       const response = await axios.post(`${API}/export`, {
         format,
+        season_id: seasonId,
         liga_id: filters.liga_id || null,
-        limit: 1000
+        limit: 10000
       }, {
         responseType: format === 'csv' ? 'blob' : 'json'
       });
+
+      const filename = `partidos_${seasonId}_${new Date().toISOString().split('T')[0]}`;
 
       if (format === 'csv') {
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `partidos_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute('download', `${filename}.csv`);
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -82,7 +111,7 @@ const Matches = () => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `partidos_${new Date().toISOString().split('T')[0]}.json`);
+        link.setAttribute('download', `${filename}.json`);
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -115,9 +144,17 @@ const Matches = () => {
       </div>
 
       <div className="card" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-          <Filter size={20} />
-          <h3 style={{ fontSize: '1rem', fontWeight: '600' }}>Filtros</h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Filter size={20} />
+            <h3 style={{ fontSize: '1rem', fontWeight: '600' }}>Filtros</h3>
+          </div>
+          
+          <SeasonSelector 
+            ligaId="SPAIN_LA_LIGA"
+            value={seasonId}
+            onChange={setSeasonId}
+          />
         </div>
         
         <div style={{
@@ -186,12 +223,13 @@ const Matches = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
           <button
             data-testid="btn-search"
             onClick={handleSearch}
+            disabled={!seasonId}
             className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: seasonId ? 1 : 0.5 }}
           >
             <Search size={18} />
             Buscar
@@ -199,8 +237,9 @@ const Matches = () => {
           <button
             data-testid="btn-export-csv"
             onClick={() => handleExport('csv')}
+            disabled={!seasonId}
             className="btn btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: seasonId ? 1 : 0.5 }}
           >
             <Download size={18} />
             Exportar CSV
@@ -208,8 +247,9 @@ const Matches = () => {
           <button
             data-testid="btn-export-json"
             onClick={() => handleExport('json')}
+            disabled={!seasonId}
             className="btn btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: seasonId ? 1 : 0.5 }}
           >
             <Download size={18} />
             Exportar JSON
@@ -218,16 +258,27 @@ const Matches = () => {
       </div>
 
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <h3 style={{ fontSize: '1rem', fontWeight: '600' }}>
             Resultados ({pagination.total.toLocaleString()})
           </h3>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-            Página {pagination.page} de {pagination.pages}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+            {seasonId && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <Calendar size={14} />
+                {seasonId.split('_').pop()}
+              </span>
+            )}
+            <span>Página {pagination.page} de {pagination.pages}</span>
           </div>
         </div>
 
-        {loading ? (
+        {!seasonId ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+            <Calendar size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+            <p>Selecciona una temporada para ver los partidos</p>
+          </div>
+        ) : loading ? (
           <div style={{ textAlign: 'center', padding: '2rem' }}>Cargando...</div>
         ) : (
           <>
@@ -236,42 +287,48 @@ const Matches = () => {
                 <thead>
                   <tr>
                     <th>Fecha</th>
-                    <th>Liga</th>
+                    <th>Jornada</th>
                     <th>Local</th>
                     <th style={{ textAlign: 'center' }}>Resultado</th>
                     <th>Visitante</th>
-                    <th>Estado</th>
+                    <th style={{ textAlign: 'center' }}>1MT</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {matches.map((match, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontSize: '0.9rem' }}>{match.fecha}</td>
-                      <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                        {match.liga_nombre}
-                      </td>
-                      <td style={{ fontWeight: '500' }}>
-                        {match.equipo_local}
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>
-                          ({match.pos_clasif_local}°)
-                        </span>
-                      </td>
-                      <td style={{ textAlign: 'center', fontWeight: '700', fontSize: '1.1rem' }}>
-                        {match.goles_local_TR} - {match.goles_visitante_TR}
-                      </td>
-                      <td style={{ fontWeight: '500' }}>
-                        {match.equipo_visitante}
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>
-                          ({match.pos_clasif_visita}°)
-                        </span>
-                      </td>
-                      <td>
-                        <span className="badge badge-success">
-                          {match.estado_del_partido}
-                        </span>
+                  {matches.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                        No se encontraron partidos con los filtros seleccionados
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    matches.map((match, idx) => (
+                      <tr key={match.match_id || match.id_partido || idx}>
+                        <td style={{ fontSize: '0.9rem' }}>{match.fecha}</td>
+                        <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          {match.ronda?.replace('Regular Season - ', 'J') || '-'}
+                        </td>
+                        <td style={{ fontWeight: '500' }}>
+                          {match.equipo_local}
+                        </td>
+                        <td style={{ textAlign: 'center', fontWeight: '700', fontSize: '1.1rem' }}>
+                          <span style={{ color: match.goles_local_TR > match.goles_visitante_TR ? '#10b981' : match.goles_local_TR < match.goles_visitante_TR ? '#ef4444' : '#f59e0b' }}>
+                            {match.goles_local_TR}
+                          </span>
+                          {' - '}
+                          <span style={{ color: match.goles_visitante_TR > match.goles_local_TR ? '#10b981' : match.goles_visitante_TR < match.goles_local_TR ? '#ef4444' : '#f59e0b' }}>
+                            {match.goles_visitante_TR}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: '500' }}>
+                          {match.equipo_visitante}
+                        </td>
+                        <td style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                          {match.goles_local_1MT} - {match.goles_visitante_1MT}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
