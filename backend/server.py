@@ -609,8 +609,8 @@ async def generate_prediction(request: PronosticoRequest):
 @api_router.get("/prediction/team/{nombre}")
 async def get_team_stats(
     nombre: str,
-    liga_id: str = "SPAIN_LA_LIGA",
-    temporada: int = 2023,
+    liga_id: Optional[str] = None,
+    temporada: Optional[int] = None,
     season_id: Optional[str] = None
 ):
     """
@@ -618,8 +618,8 @@ async def get_team_stats(
     
     **Parámetros:**
     - `nombre`: Nombre del equipo
-    - `liga_id`: ID de la liga
-    - `temporada`: Año (legacy)
+    - `liga_id`: ID de la liga (opcional, se infiere de season_id)
+    - `temporada`: Año (legacy, se infiere de season_id)
     - `season_id`: ID de temporada estructurado (preferido)
     
     **Retorna:**
@@ -627,10 +627,31 @@ async def get_team_stats(
     - Para tiempo completo, primer tiempo y segundo tiempo
     """
     try:
+        # Inferir liga_id y temporada de season_id si no se proporcionan
+        effective_liga_id = liga_id
+        effective_temporada = temporada
+        
+        if season_id:
+            parts = season_id.rsplit('_', 1)
+            if len(parts) == 2:
+                if not effective_liga_id:
+                    effective_liga_id = parts[0]
+                try:
+                    if not effective_temporada:
+                        effective_temporada = int(parts[1].split('-')[0])
+                except ValueError:
+                    pass
+        
+        # Valores por defecto solo si no se puede inferir nada
+        if not effective_liga_id:
+            effective_liga_id = "SPAIN_LA_LIGA"
+        if not effective_temporada:
+            effective_temporada = 2023
+        
         equipo = await stats_builder.obtener_stats_equipo(
             nombre=nombre,
-            liga_id=liga_id,
-            temporada=temporada,
+            liga_id=effective_liga_id,
+            temporada=effective_temporada,
             season_id=season_id
         )
         
