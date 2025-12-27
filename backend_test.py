@@ -440,6 +440,241 @@ class PredictionEngineTest:
         self.test_results["teams_list"] = True
         return True
 
+    def test_9_seasons_list(self) -> bool:
+        """Test 9: Seasons List - New season_id functionality."""
+        self.log("=== TEST 9: Seasons List ===")
+        
+        result = self.make_request("GET", "/seasons")
+        
+        if not result["success"]:
+            self.log("❌ Seasons list request failed", "ERROR")
+            return False
+            
+        data = result["data"]
+        
+        # Validate structure
+        required_fields = ["total", "seasons"]
+        missing_fields = [f for f in required_fields if f not in data]
+        
+        if missing_fields:
+            self.log(f"❌ Missing fields in seasons list: {missing_fields}", "ERROR")
+            return False
+            
+        seasons = data["seasons"]
+        if not seasons:
+            self.log("❌ No seasons found", "ERROR")
+            return False
+            
+        # Validate season structure
+        first_season = seasons[0]
+        required_season_fields = ["season_id", "liga_id", "year", "total_partidos"]
+        missing_season_fields = [f for f in required_season_fields if f not in first_season]
+        
+        if missing_season_fields:
+            self.log(f"❌ Missing fields in season data: {missing_season_fields}", "ERROR")
+            return False
+            
+        # Check season_id format
+        season_id = first_season["season_id"]
+        if not season_id.endswith("_2023-24"):
+            self.log(f"❌ Expected season_id format like 'SPAIN_LA_LIGA_2023-24', got {season_id}", "ERROR")
+            return False
+            
+        self.log(f"✅ Seasons list working correctly - found {len(seasons)} seasons")
+        self.test_results["seasons_list"] = True
+        return True
+
+    def test_10_season_detail(self) -> bool:
+        """Test 10: Season Detail - Get specific season."""
+        self.log("=== TEST 10: Season Detail ===")
+        
+        season_id = "SPAIN_LA_LIGA_2023-24"
+        result = self.make_request("GET", f"/seasons/{season_id}")
+        
+        if not result["success"]:
+            self.log("❌ Season detail request failed", "ERROR")
+            return False
+            
+        data = result["data"]
+        
+        # Validate structure
+        required_fields = ["season_id", "liga_id", "year", "total_partidos", "equipos"]
+        missing_fields = [f for f in required_fields if f not in data]
+        
+        if missing_fields:
+            self.log(f"❌ Missing fields in season detail: {missing_fields}", "ERROR")
+            return False
+            
+        if data["season_id"] != season_id:
+            self.log(f"❌ Expected season_id {season_id}, got {data['season_id']}", "ERROR")
+            return False
+            
+        equipos = data["equipos"]
+        if not equipos or len(equipos) < 10:  # Should have reasonable number of teams
+            self.log(f"❌ Expected teams list, got {len(equipos) if equipos else 0} teams", "ERROR")
+            return False
+            
+        self.log(f"✅ Season detail working correctly - {len(equipos)} teams found")
+        self.test_results["season_detail"] = True
+        return True
+
+    def test_11_classification_with_season_id(self) -> bool:
+        """Test 11: Classification with season_id parameter."""
+        self.log("=== TEST 11: Classification with season_id ===")
+        
+        season_id = "SPAIN_LA_LIGA_2023-24"
+        result = self.make_request("GET", f"/prediction/classification?season_id={season_id}&tipo_tiempo=completo")
+        
+        if not result["success"]:
+            self.log("❌ Classification with season_id failed", "ERROR")
+            return False
+            
+        data = result["data"]
+        
+        # Validate structure
+        if "clasificacion" not in data:
+            self.log("❌ No 'clasificacion' field in response", "ERROR")
+            return False
+            
+        # Check if season_id is included in response
+        if "season_id" not in data:
+            self.log("❌ No 'season_id' field in classification response", "ERROR")
+            return False
+            
+        if data["season_id"] != season_id:
+            self.log(f"❌ Expected season_id {season_id}, got {data['season_id']}", "ERROR")
+            return False
+            
+        equipos = data["clasificacion"]
+        if len(equipos) != 20:
+            self.log(f"❌ Expected 20 teams in classification, got {len(equipos)}", "ERROR")
+            return False
+            
+        self.log("✅ Classification with season_id working correctly")
+        self.test_results["classification_season_id"] = True
+        return True
+
+    def test_12_teams_with_season_id(self) -> bool:
+        """Test 12: Teams list with season_id parameter."""
+        self.log("=== TEST 12: Teams with season_id ===")
+        
+        season_id = "SPAIN_LA_LIGA_2023-24"
+        result = self.make_request("GET", f"/prediction/teams?season_id={season_id}")
+        
+        if not result["success"]:
+            self.log("❌ Teams with season_id request failed", "ERROR")
+            return False
+            
+        data = result["data"]
+        
+        # Validate structure
+        required_fields = ["season_id", "total", "equipos"]
+        missing_fields = [f for f in required_fields if f not in data]
+        
+        if missing_fields:
+            self.log(f"❌ Missing fields in teams with season_id: {missing_fields}", "ERROR")
+            return False
+            
+        if data["season_id"] != season_id:
+            self.log(f"❌ Expected season_id {season_id}, got {data['season_id']}", "ERROR")
+            return False
+            
+        equipos = data["equipos"]
+        if not equipos:
+            self.log("❌ No teams found", "ERROR")
+            return False
+            
+        # Validate team structure
+        first_team = equipos[0]
+        required_team_fields = ["nombre", "puntos"]
+        missing_team_fields = [f for f in required_team_fields if f not in first_team]
+        
+        if missing_team_fields:
+            self.log(f"❌ Missing fields in team data: {missing_team_fields}", "ERROR")
+            return False
+            
+        self.log(f"✅ Teams with season_id working correctly - {len(equipos)} teams")
+        self.test_results["teams_season_id"] = True
+        return True
+
+    def test_13_prediction_with_season_id(self) -> bool:
+        """Test 13: Generate prediction with season_id."""
+        self.log("=== TEST 13: Prediction with season_id ===")
+        
+        data = {
+            "equipo_local": "Barcelona",
+            "equipo_visitante": "Real Madrid",
+            "liga_id": "SPAIN_LA_LIGA",
+            "season_id": "SPAIN_LA_LIGA_2023-24"
+        }
+        
+        result = self.make_request("POST", "/prediction/generate", data)
+        
+        if not result["success"]:
+            self.log("❌ Prediction with season_id failed", "ERROR")
+            return False
+            
+        response_data = result["data"]
+        
+        if not response_data.get("success"):
+            self.log("❌ Prediction returned success=false", "ERROR")
+            return False
+            
+        pronostico = response_data.get("pronostico")
+        if not pronostico:
+            self.log("❌ No prediction data in response", "ERROR")
+            return False
+            
+        # Validate prediction structure
+        required_times = ["tiempo_completo", "primer_tiempo", "segundo_tiempo"]
+        for tiempo in required_times:
+            if tiempo not in pronostico:
+                self.log(f"❌ Missing {tiempo} in prediction", "ERROR")
+                return False
+                
+        self.log("✅ Prediction with season_id working correctly")
+        self.test_results["prediction_season_id"] = True
+        return True
+
+    def test_14_backward_compatibility(self) -> bool:
+        """Test 14: Backward compatibility - legacy endpoints still work."""
+        self.log("=== TEST 14: Backward Compatibility ===")
+        
+        # Test legacy classification endpoint
+        result = self.make_request("GET", "/prediction/classification?liga_id=SPAIN_LA_LIGA&temporada=2023")
+        
+        if not result["success"]:
+            self.log("❌ Legacy classification endpoint failed", "ERROR")
+            return False
+            
+        data = result["data"]
+        
+        if "clasificacion" not in data:
+            self.log("❌ No 'clasificacion' field in legacy response", "ERROR")
+            return False
+            
+        equipos = data["clasificacion"]
+        if len(equipos) != 20:
+            self.log(f"❌ Expected 20 teams in legacy classification, got {len(equipos)}", "ERROR")
+            return False
+            
+        # Test legacy teams endpoint
+        result_teams = self.make_request("GET", "/prediction/teams?liga_id=SPAIN_LA_LIGA&temporada=2023")
+        
+        if not result_teams["success"]:
+            self.log("❌ Legacy teams endpoint failed", "ERROR")
+            return False
+            
+        teams_data = result_teams["data"]
+        
+        if "equipos" not in teams_data:
+            self.log("❌ No 'equipos' field in legacy teams response", "ERROR")
+            return False
+            
+        self.log("✅ Backward compatibility working correctly")
+        self.test_results["backward_compatibility"] = True
+        return True
+
     def run_all_tests(self) -> bool:
         """Run all tests in order."""
         self.log("🚀 Starting PLLA 3.0 Prediction Engine Tests")
