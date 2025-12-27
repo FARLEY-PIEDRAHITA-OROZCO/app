@@ -3,11 +3,14 @@
  * 
  * SOLUCIÓN: Estructura DOM fija - sin renderizado condicional que altere estructura
  * Solo cambia visibilidad y contenido, nunca la estructura del árbol DOM
+ * 
+ * Actualización: Soporte para season_id
  */
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Target, TrendingUp, Users, AlertCircle, RefreshCw } from 'lucide-react';
+import SeasonSelector from '../components/SeasonSelector';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -16,19 +19,25 @@ const Predictions = () => {
   const [teams, setTeams] = useState([]);
   const [localTeam, setLocalTeam] = useState('');
   const [awayTeam, setAwayTeam] = useState('');
+  const [seasonId, setSeasonId] = useState('');
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchTeams();
-  }, []);
+    if (seasonId) {
+      fetchTeams();
+    }
+  }, [seasonId]);
 
   const fetchTeams = async () => {
     try {
       setLoadingTeams(true);
-      const response = await axios.get(`${API}/prediction/teams?liga_id=SPAIN_LA_LIGA&temporada=2023`);
+      setLocalTeam('');
+      setAwayTeam('');
+      setPrediction(null);
+      const response = await axios.get(`${API}/prediction/teams?season_id=${seasonId}`);
       setTeams(response.data.equipos || []);
     } catch (err) {
       console.error('Error fetching teams:', err);
@@ -56,7 +65,7 @@ const Predictions = () => {
         equipo_local: localTeam,
         equipo_visitante: awayTeam,
         liga_id: 'SPAIN_LA_LIGA',
-        temporada: 2023
+        season_id: seasonId
       });
 
       setPrediction(response.data.pronostico);
@@ -103,10 +112,26 @@ const Predictions = () => {
 
       {/* Selection Card - Always rendered */}
       <div className="card" style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Users size={20} />
-          Seleccionar Partido
-        </h2>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '1.5rem',
+          flexWrap: 'wrap',
+          gap: '1rem'
+        }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Users size={20} />
+            Seleccionar Partido
+          </h2>
+          
+          {/* Selector de Temporada */}
+          <SeasonSelector 
+            ligaId="SPAIN_LA_LIGA"
+            value={seasonId}
+            onChange={setSeasonId}
+          />
+        </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '1rem', alignItems: 'end' }}>
           <div>
@@ -117,7 +142,7 @@ const Predictions = () => {
               value={localTeam}
               onChange={(e) => setLocalTeam(e.target.value)}
               style={{ width: '100%' }}
-              disabled={loadingTeams}
+              disabled={loadingTeams || !seasonId}
             >
               <option value="">Seleccionar equipo</option>
               {teams.map((team) => (
@@ -140,7 +165,7 @@ const Predictions = () => {
               value={awayTeam}
               onChange={(e) => setAwayTeam(e.target.value)}
               style={{ width: '100%' }}
-              disabled={loadingTeams}
+              disabled={loadingTeams || !seasonId}
             >
               <option value="">Seleccionar equipo</option>
               {teams.map((team) => (
