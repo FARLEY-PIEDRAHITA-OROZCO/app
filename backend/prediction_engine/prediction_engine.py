@@ -112,6 +112,7 @@ class PredictionEngine:
         equipo_visitante: str,
         liga_id: str,
         temporada: Optional[int] = None,
+        season_id: Optional[str] = None,
         partido_id: Optional[str] = None
     ) -> Pronostico:
         """
@@ -121,6 +122,8 @@ class PredictionEngine:
         - Tiempo Completo (90 min)
         - Primer Tiempo (1MT)
         - Segundo Tiempo (2MT)
+        - Over/Under goles
+        - Forma reciente de los equipos
         
         Parámetros:
         -----------
@@ -131,7 +134,9 @@ class PredictionEngine:
         liga_id : str
             ID de la liga
         temporada : int, optional
-            Año de la temporada
+            Año de la temporada (legacy)
+        season_id : str, optional
+            ID de temporada estructurado (preferido)
         partido_id : str, optional
             ID del partido (para tracking)
         
@@ -144,30 +149,15 @@ class PredictionEngine:
         -------
         ValueError
             Si no se encuentran estadísticas de algún equipo
-        
-        Ejemplo:
-        --------
-        ```python
-        pronostico = await engine.generar_pronostico(
-            'Barcelona', 'Real Madrid', 'SPAIN_LA_LIGA'
-        )
-        
-        # Acceder a resultados
-        tc = pronostico.tiempo_completo
-        print(f"Pronóstico: {tc.pronostico}")
-        print(f"Doble oportunidad: {tc.doble_oportunidad}")
-        print(f"Ambos marcan: {tc.ambos_marcan}")
-        print(f"Probabilidades: {tc.probabilidades.to_dict()}")
-        ```
         """
-        logger.info(f"Generando pronóstico: {equipo_local} vs {equipo_visitante}")
+        logger.info(f"Generando pronóstico: {equipo_local} vs {equipo_visitante}, season_id={season_id}")
         
         # Obtener estadísticas de ambos equipos
         stats_local = await self.stats_builder.obtener_stats_equipo(
-            equipo_local, liga_id, temporada
+            equipo_local, liga_id, temporada, season_id
         )
         stats_visitante = await self.stats_builder.obtener_stats_equipo(
-            equipo_visitante, liga_id, temporada
+            equipo_visitante, liga_id, temporada, season_id
         )
         
         # Validar que existen estadísticas
@@ -176,23 +166,37 @@ class PredictionEngine:
         if not stats_visitante:
             raise ValueError(f"No se encontraron estadísticas para {equipo_visitante}")
         
+        # Obtener forma reciente de ambos equipos
+        forma_local = await self.stats_builder.obtener_forma_reciente(
+            equipo_local, liga_id, season_id, temporada
+        )
+        forma_visitante = await self.stats_builder.obtener_forma_reciente(
+            equipo_visitante, liga_id, season_id, temporada
+        )
+        
         # Generar pronóstico para cada tiempo
         pronostico_tc = self._generar_pronostico_tiempo(
             stats_local.stats_completo,
             stats_visitante.stats_completo,
-            TipoTiempo.COMPLETO
+            TipoTiempo.COMPLETO,
+            forma_local,
+            forma_visitante
         )
         
         pronostico_1mt = self._generar_pronostico_tiempo(
             stats_local.stats_primer_tiempo,
             stats_visitante.stats_primer_tiempo,
-            TipoTiempo.PRIMER_TIEMPO
+            TipoTiempo.PRIMER_TIEMPO,
+            forma_local,
+            forma_visitante
         )
         
         pronostico_2mt = self._generar_pronostico_tiempo(
             stats_local.stats_segundo_tiempo,
             stats_visitante.stats_segundo_tiempo,
-            TipoTiempo.SEGUNDO_TIEMPO
+            TipoTiempo.SEGUNDO_TIEMPO,
+            forma_local,
+            forma_visitante
         )
         
         # Crear pronóstico completo
@@ -201,9 +205,14 @@ class PredictionEngine:
             equipo_local=equipo_local,
             equipo_visitante=equipo_visitante,
             liga_id=liga_id,
+            season_id=season_id,
             tiempo_completo=pronostico_tc,
             primer_tiempo=pronostico_1mt,
             segundo_tiempo=pronostico_2mt,
+            forma_reciente={
+                "local": forma_local,
+                "visitante": forma_visitante
+            },
             version_algoritmo=Config.VERSION
         )
         
