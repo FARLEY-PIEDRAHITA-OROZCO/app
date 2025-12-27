@@ -4,11 +4,13 @@
  * Muestra estadísticas detalladas de un equipo:
  * - Generales, como local y como visitante
  * - Para los 3 tiempos (TC, 1MT, 2MT)
+ * - Con selector de temporada (season_id)
  */
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Users, Home, MapPin, TrendingUp, Search } from 'lucide-react';
+import SeasonSelector from '../components/SeasonSelector';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -16,18 +18,23 @@ const API = `${BACKEND_URL}/api`;
 const TeamStats = () => {
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('');
+  const [seasonId, setSeasonId] = useState('');
   const [teamStats, setTeamStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingTeams, setLoadingTeams] = useState(true);
 
   useEffect(() => {
-    fetchTeams();
-  }, []);
+    if (seasonId) {
+      fetchTeams();
+      setSelectedTeam('');
+      setTeamStats(null);
+    }
+  }, [seasonId]);
 
   const fetchTeams = async () => {
     try {
       setLoadingTeams(true);
-      const response = await axios.get(`${API}/prediction/teams?liga_id=SPAIN_LA_LIGA&temporada=2023`);
+      const response = await axios.get(`${API}/prediction/teams?season_id=${seasonId}`);
       setTeams(response.data.equipos || []);
     } catch (err) {
       console.error('Error fetching teams:', err);
@@ -37,12 +44,12 @@ const TeamStats = () => {
   };
 
   const fetchTeamStats = async (teamName) => {
-    if (!teamName) return;
+    if (!teamName || !seasonId) return;
     
     try {
       setLoading(true);
       const response = await axios.get(
-        `${API}/prediction/team/${encodeURIComponent(teamName)}?liga_id=SPAIN_LA_LIGA&temporada=2023`
+        `${API}/prediction/team/${encodeURIComponent(teamName)}?season_id=${seasonId}`
       );
       setTeamStats(response.data);
     } catch (err) {
@@ -215,21 +222,29 @@ const TeamStats = () => {
 
       {/* Selector */}
       <div className="card" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Search size={20} color="var(--accent)" />
-          <select
-            value={selectedTeam}
-            onChange={handleTeamChange}
-            style={{ flex: 1 }}
-            disabled={loadingTeams}
-          >
-            <option value="">Seleccionar equipo...</option>
-            {teams.map((team) => (
-              <option key={team.nombre} value={team.nombre}>
-                {team.nombre} - {team.puntos} pts ({team.rendimiento.toFixed(0)}%)
-              </option>
-            ))}
-          </select>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem' }}>
+          <SeasonSelector 
+            ligaId="SPAIN_LA_LIGA"
+            value={seasonId}
+            onChange={setSeasonId}
+          />
+          
+          <div style={{ flex: 1, minWidth: '200px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Search size={20} color="var(--accent)" />
+            <select
+              value={selectedTeam}
+              onChange={handleTeamChange}
+              style={{ flex: 1 }}
+              disabled={loadingTeams || !seasonId}
+            >
+              <option value="">Seleccionar equipo...</option>
+              {teams.map((team) => (
+                <option key={team.nombre} value={team.nombre}>
+                  {team.nombre} - {team.puntos} pts ({team.rendimiento.toFixed(0)}%)
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -242,9 +257,14 @@ const TeamStats = () => {
 
       {teamStats && !loading && (
         <div className="fade-in">
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>
-            {teamStats.nombre}
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>
+              {teamStats.nombre}
+            </h2>
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              Temporada: {teamStats.season_id?.split('_').pop() || seasonId?.split('_').pop()}
+            </span>
+          </div>
 
           <TimeSection 
             title="Tiempo Completo (90 min)" 
@@ -269,7 +289,7 @@ const TeamStats = () => {
       {!selectedTeam && !loading && (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
           <Users size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-          <p>Selecciona un equipo para ver sus estadísticas</p>
+          <p>Selecciona una temporada y un equipo para ver sus estadísticas</p>
         </div>
       )}
     </div>
