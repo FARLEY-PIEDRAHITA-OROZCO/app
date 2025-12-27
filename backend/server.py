@@ -420,9 +420,9 @@ class PronosticoRequest(BaseModel):
     """Request para generar un pronóstico."""
     equipo_local: str = Field(..., description="Nombre del equipo local")
     equipo_visitante: str = Field(..., description="Nombre del equipo visitante")
-    liga_id: str = Field(default="SPAIN_LA_LIGA", description="ID de la liga")
-    temporada: Optional[int] = Field(default=2023, description="Temporada (legacy)")
-    season_id: Optional[str] = Field(default=None, description="ID de temporada estructurado (preferido)")
+    liga_id: Optional[str] = Field(default=None, description="ID de la liga (se infiere de season_id si no se proporciona)")
+    temporada: Optional[int] = Field(default=None, description="Temporada (legacy, se infiere de season_id)")
+    season_id: Optional[str] = Field(default=None, description="ID de temporada estructurado (preferido, ej: SPAIN_LA_LIGA_2023-24)")
 
 class ValidacionRequest(BaseModel):
     """Request para validar un pronóstico."""
@@ -434,9 +434,9 @@ class ValidacionRequest(BaseModel):
 
 class ConstruirStatsRequest(BaseModel):
     """Request para construir estadísticas."""
-    liga_id: str = Field(default="SPAIN_LA_LIGA", description="ID de la liga")
-    temporada: Optional[int] = Field(default=2023, description="Temporada (legacy)")
-    season_id: Optional[str] = Field(default=None, description="ID de temporada estructurado (preferido)")
+    liga_id: Optional[str] = Field(default=None, description="ID de la liga (se infiere de season_id si no se proporciona)")
+    temporada: Optional[int] = Field(default=None, description="Temporada (legacy, se infiere de season_id)")
+    season_id: Optional[str] = Field(default=None, description="ID de temporada estructurado (preferido, ej: SPAIN_LA_LIGA_2023-24)")
 
 
 @api_router.post("/prediction/build-stats")
