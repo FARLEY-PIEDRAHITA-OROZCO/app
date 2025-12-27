@@ -675,6 +675,108 @@ class PredictionEngineTest:
         self.test_results["backward_compatibility"] = True
         return True
 
+    def test_15_stats_global_view(self) -> bool:
+        """Test 15: Stats endpoint - Global view (without season_id)."""
+        self.log("=== TEST 15: Stats Global View ===")
+        
+        result = self.make_request("GET", "/stats")
+        
+        if not result["success"]:
+            self.log("❌ Stats global view request failed", "ERROR")
+            return False
+            
+        data = result["data"]
+        
+        # Validate structure
+        required_fields = ["total_matches", "total_leagues", "leagues", "avg_goals_per_match", "total_goals", "last_update"]
+        missing_fields = [f for f in required_fields if f not in data]
+        
+        if missing_fields:
+            self.log(f"❌ Missing fields in stats global view: {missing_fields}", "ERROR")
+            return False
+            
+        # Validate expected values from review request
+        if data["total_matches"] != 380:
+            self.log(f"❌ Expected total_matches=380, got {data['total_matches']}", "ERROR")
+            return False
+            
+        # Check if SPAIN_LA_LIGA is in leagues
+        leagues = data["leagues"]
+        spain_la_liga_found = False
+        for league in leagues:
+            if league.get("_id") == "SPAIN_LA_LIGA" or "SPAIN_LA_LIGA" in str(league.get("liga_nombre", "")):
+                spain_la_liga_found = True
+                break
+                
+        if not spain_la_liga_found:
+            self.log("❌ SPAIN_LA_LIGA not found in top leagues", "ERROR")
+            return False
+            
+        # Validate numeric fields
+        if not isinstance(data["avg_goals_per_match"], (int, float)):
+            self.log("❌ avg_goals_per_match should be numeric", "ERROR")
+            return False
+            
+        if not isinstance(data["total_goals"], int):
+            self.log("❌ total_goals should be integer", "ERROR")
+            return False
+            
+        self.log(f"✅ Stats global view working correctly - {data['total_matches']} matches, {data['total_leagues']} leagues")
+        self.test_results["stats_global"] = True
+        return True
+
+    def test_16_stats_season_view(self) -> bool:
+        """Test 16: Stats endpoint - Season view (with season_id)."""
+        self.log("=== TEST 16: Stats Season View ===")
+        
+        season_id = "SPAIN_LA_LIGA_2023-24"
+        result = self.make_request("GET", f"/stats?season_id={season_id}")
+        
+        if not result["success"]:
+            self.log("❌ Stats season view request failed", "ERROR")
+            return False
+            
+        data = result["data"]
+        
+        # Validate structure
+        required_fields = ["total_matches", "total_leagues", "leagues", "avg_goals_per_match", "total_goals", "last_update", "season_id", "season_label"]
+        missing_fields = [f for f in required_fields if f not in data]
+        
+        if missing_fields:
+            self.log(f"❌ Missing fields in stats season view: {missing_fields}", "ERROR")
+            return False
+            
+        # Validate season_id fields
+        if data["season_id"] != season_id:
+            self.log(f"❌ Expected season_id={season_id}, got {data['season_id']}", "ERROR")
+            return False
+            
+        if data["season_label"] != "2023-24":
+            self.log(f"❌ Expected season_label=2023-24, got {data['season_label']}", "ERROR")
+            return False
+            
+        # In season view, leagues should show jornadas (rounds) instead of leagues
+        leagues = data["leagues"]
+        if not leagues:
+            self.log("❌ No leagues/jornadas found in season view", "ERROR")
+            return False
+            
+        # Validate that we have jornadas (rounds) - they should be numbered
+        first_league = leagues[0]
+        if "_id" not in first_league:
+            self.log("❌ Missing _id field in leagues/jornadas", "ERROR")
+            return False
+            
+        # In season mode, _id should be round number (jornada)
+        round_id = first_league["_id"]
+        if not isinstance(round_id, (int, str)):
+            self.log(f"❌ Expected round ID to be number or string, got {type(round_id)}", "ERROR")
+            return False
+            
+        self.log(f"✅ Stats season view working correctly - season {data['season_label']}, {len(leagues)} jornadas")
+        self.test_results["stats_season"] = True
+        return True
+
     def run_all_tests(self) -> bool:
         """Run all tests in order."""
         self.log("🚀 Starting PLLA 3.0 Prediction Engine Tests")
