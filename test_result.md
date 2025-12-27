@@ -335,15 +335,18 @@ backend:
 
   - task: "Matches page with season_id filter"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/Matches.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Página de Matches ya tiene SeasonSelector integrado. Filtra partidos, permite exportar CSV/JSON con season_id. Screenshots confirman funcionamiento correcto."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Matches page funciona correctamente. Tiene SeasonSelector visible, filtra partidos por temporada, muestra tabla con 380 resultados cuando se selecciona temporada, paginación funciona, exportación CSV/JSON disponible con season_id."
 
 frontend:
   - task: "Frontend básico existente (Dashboard, Matches, Scraping)"
