@@ -555,8 +555,8 @@ async def get_classification(
         tipo = tiempo_map.get(tipo_tiempo, TipoTiempo.COMPLETO)
         
         tabla = await classification_engine.generar_clasificacion(
-            liga_id=liga_id,
-            temporada=temporada,
+            liga_id=effective_liga_id,
+            temporada=effective_temporada,
             tipo_tiempo=tipo,
             season_id=season_id
         )
@@ -566,8 +566,8 @@ async def get_classification(
         # Agregar season_id a la respuesta
         if season_id:
             result['season_id'] = season_id
-        elif temporada:
-            result['season_id'] = f"{liga_id}_{temporada}-{(temporada + 1) % 100:02d}"
+        elif effective_temporada:
+            result['season_id'] = f"{effective_liga_id}_{effective_temporada}-{(effective_temporada + 1) % 100:02d}"
         
         return result
     
