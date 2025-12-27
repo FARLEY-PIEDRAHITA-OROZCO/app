@@ -378,6 +378,36 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: Matches page funciona correctamente. Tiene SeasonSelector visible, filtra partidos por temporada, muestra tabla con 380 resultados cuando se selecciona temporada, paginación funciona, exportación CSV/JSON disponible con season_id."
 
+  - task: "New PLLA 3.0 Features - Over/Under, Goles Esperados, Forma Reciente"
+    implemented: true
+    working: true
+    file: "prediction_engine/prediction_engine.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implementadas nuevas funcionalidades PLLA 3.0: Over/Under goles (1.5, 2.5, 3.5), goles esperados por equipo, forma reciente con últimos 5 partidos, ajuste por forma reciente con peso 30%"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Nuevas funcionalidades PLLA 3.0 funcionan perfectamente. Over/Under: OVER 1.5 (80.9%), OVER 2.5 (58.91%), UNDER 3.5 (63.49%). Goles esperados: Real Madrid 2.2, Almeria 0.85, Total 3.06. Forma reciente: Real Madrid 5V consecutivas (100% rendimiento), Almeria 4D consecutivas (6.67% rendimiento). season_id integrado correctamente."
+
+  - task: "season_id integration in prediction generation"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Actualizado endpoint POST /api/prediction/generate para pasar correctamente season_id al motor de predicción en lugar de ignorarlo"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: season_id integration funciona correctamente. El endpoint ahora pasa season_id al motor de predicción y lo incluye en la respuesta. Probado con season_id='SPAIN_LA_LIGA_2023-24' y funciona perfectamente."
+
 frontend:
   - task: "Frontend básico existente (Dashboard, Matches, Scraping)"
     implemented: true
