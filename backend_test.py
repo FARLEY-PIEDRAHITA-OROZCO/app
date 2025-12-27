@@ -24,7 +24,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 
 # Backend URL from environment
-BACKEND_URL = "https://sports-predict-12.preview.emergentagent.com/api"
+BACKEND_URL = "https://predictify-24.preview.emergentagent.com/api"
 
 class PredictionEngineTest:
     def __init__(self):
