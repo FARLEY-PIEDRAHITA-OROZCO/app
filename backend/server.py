@@ -620,17 +620,33 @@ async def get_prediction_config():
 @api_router.get("/prediction/teams")
 async def list_teams(
     liga_id: str = "SPAIN_LA_LIGA",
-    temporada: int = 2023
+    temporada: int = 2023,
+    season_id: Optional[str] = None
 ):
     """
     Lista todos los equipos disponibles para pronósticos.
+    
+    **Parámetros:**
+    - `liga_id`: ID de la liga
+    - `temporada`: Año (legacy)
+    - `season_id`: ID de temporada estructurado (preferido)
     """
     try:
-        equipos = await stats_builder.obtener_todos_equipos(liga_id, temporada)
+        equipos = await stats_builder.obtener_todos_equipos(
+            liga_id, 
+            temporada,
+            season_id=season_id
+        )
+        
+        # Determinar season_id efectivo
+        effective_season_id = season_id
+        if not effective_season_id and temporada:
+            effective_season_id = f"{liga_id}_{temporada}-{(temporada + 1) % 100:02d}"
         
         return {
             "liga_id": liga_id,
             "temporada": temporada,
+            "season_id": effective_season_id,
             "total": len(equipos),
             "equipos": [
                 {
