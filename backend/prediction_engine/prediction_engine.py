@@ -817,7 +817,6 @@ class PredictionEngine:
         P(X > umbral) ≈ 1 - P(X <= umbral)
         Usando aproximación simplificada basada en la media.
         """
-        import math
         
         # Probabilidad acumulada P(X <= k) usando Poisson
         prob_under = 0
