@@ -777,6 +777,104 @@ class PredictionEngineTest:
         self.test_results["stats_season"] = True
         return True
 
+    def test_17_leagues_list(self) -> bool:
+        """Test 17: GET /api/leagues - Multi-league support."""
+        self.log("=== TEST 17: Leagues List ===")
+        
+        result = self.make_request("GET", "/leagues")
+        
+        if not result["success"]:
+            self.log("❌ Leagues list request failed", "ERROR")
+            return False
+            
+        data = result["data"]
+        
+        # Should return a list of leagues
+        if not isinstance(data, list):
+            self.log("❌ Expected leagues list to be an array", "ERROR")
+            return False
+            
+        if not data:
+            self.log("❌ No leagues found", "ERROR")
+            return False
+            
+        # Validate league structure
+        first_league = data[0]
+        required_fields = ["_id", "liga_nombre", "total_partidos"]
+        missing_fields = [f for f in required_fields if f not in first_league]
+        
+        if missing_fields:
+            self.log(f"❌ Missing fields in league data: {missing_fields}", "ERROR")
+            return False
+            
+        # Check if SPAIN_LA_LIGA is present with 380 matches as mentioned in review request
+        spain_la_liga_found = False
+        for league in data:
+            if league.get("_id") == "SPAIN_LA_LIGA":
+                spain_la_liga_found = True
+                if league.get("total_partidos") != 380:
+                    self.log(f"❌ Expected SPAIN_LA_LIGA to have 380 matches, got {league.get('total_partidos')}", "ERROR")
+                    return False
+                break
+                
+        if not spain_la_liga_found:
+            self.log("❌ SPAIN_LA_LIGA not found in leagues list", "ERROR")
+            return False
+            
+        self.log(f"✅ Leagues list working correctly - found {len(data)} leagues, SPAIN_LA_LIGA with 380 matches")
+        self.test_results["leagues_list"] = True
+        return True
+
+    def test_18_seasons_by_league(self) -> bool:
+        """Test 18: GET /api/seasons?liga_id=SPAIN_LA_LIGA - Seasons for specific league."""
+        self.log("=== TEST 18: Seasons by League ===")
+        
+        result = self.make_request("GET", "/seasons?liga_id=SPAIN_LA_LIGA")
+        
+        if not result["success"]:
+            self.log("❌ Seasons by league request failed", "ERROR")
+            return False
+            
+        data = result["data"]
+        
+        # Validate structure
+        required_fields = ["total", "seasons"]
+        missing_fields = [f for f in required_fields if f not in data]
+        
+        if missing_fields:
+            self.log(f"❌ Missing fields in seasons by league: {missing_fields}", "ERROR")
+            return False
+            
+        seasons = data["seasons"]
+        if not seasons:
+            self.log("❌ No seasons found for SPAIN_LA_LIGA", "ERROR")
+            return False
+            
+        # Validate season structure
+        first_season = seasons[0]
+        required_season_fields = ["season_id", "liga_id", "year", "total_partidos"]
+        missing_season_fields = [f for f in required_season_fields if f not in first_season]
+        
+        if missing_season_fields:
+            self.log(f"❌ Missing fields in season data: {missing_season_fields}", "ERROR")
+            return False
+            
+        # All seasons should be for SPAIN_LA_LIGA
+        for season in seasons:
+            if season.get("liga_id") != "SPAIN_LA_LIGA":
+                self.log(f"❌ Expected all seasons to be for SPAIN_LA_LIGA, found {season.get('liga_id')}", "ERROR")
+                return False
+                
+        # Check season_id format
+        season_id = first_season["season_id"]
+        if not season_id.startswith("SPAIN_LA_LIGA_"):
+            self.log(f"❌ Expected season_id to start with 'SPAIN_LA_LIGA_', got {season_id}", "ERROR")
+            return False
+            
+        self.log(f"✅ Seasons by league working correctly - found {len(seasons)} seasons for SPAIN_LA_LIGA")
+        self.test_results["seasons_by_league"] = True
+        return True
+
     def run_all_tests(self) -> bool:
         """Run all tests in order."""
         self.log("🚀 Starting PLLA 3.0 Prediction Engine Tests")
