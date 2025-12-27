@@ -355,18 +355,30 @@ async def build_statistics(request: ConstruirStatsRequest):
     1. Lee todos los partidos de la liga
     2. Calcula estadísticas acumuladas por equipo
     3. Guarda en la colección `team_statistics`
+    
+    **Parámetros:**
+    - `liga_id`: ID de la liga
+    - `temporada`: Año (legacy, usar season_id preferiblemente)
+    - `season_id`: ID estructurado de temporada (ej: SPAIN_LA_LIGA_2023-24)
     """
     try:
         equipos = await stats_builder.construir_estadisticas(
             liga_id=request.liga_id,
-            temporada=request.temporada
+            temporada=request.temporada,
+            season_id=request.season_id
         )
+        
+        # Determinar season_id efectivo para respuesta
+        effective_season_id = request.season_id
+        if not effective_season_id and request.temporada:
+            effective_season_id = f"{request.liga_id}_{request.temporada}-{(request.temporada + 1) % 100:02d}"
         
         return {
             "success": True,
             "message": f"Estadísticas construidas para {len(equipos)} equipos",
             "liga_id": request.liga_id,
             "temporada": request.temporada,
+            "season_id": effective_season_id,
             "equipos": list(equipos.keys())
         }
     except ValueError as e:
