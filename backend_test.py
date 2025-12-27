@@ -598,8 +598,8 @@ class PredictionEngineTest:
         return True
 
     def test_13_prediction_with_season_id(self) -> bool:
-        """Test 13: Generate prediction with season_id."""
-        self.log("=== TEST 13: Prediction with season_id ===")
+        """Test 13: Generate prediction with season_id - NEW PLLA 3.0 FEATURES."""
+        self.log("=== TEST 13: Prediction with season_id + NEW FEATURES ===")
         
         data = {
             "equipo_local": "Barcelona",
@@ -625,6 +625,15 @@ class PredictionEngineTest:
             self.log("❌ No prediction data in response", "ERROR")
             return False
             
+        # Validate season_id is included in response
+        if "season_id" not in pronostico:
+            self.log("❌ Missing season_id in prediction response", "ERROR")
+            return False
+            
+        if pronostico["season_id"] != "SPAIN_LA_LIGA_2023-24":
+            self.log(f"❌ Expected season_id=SPAIN_LA_LIGA_2023-24, got {pronostico.get('season_id')}", "ERROR")
+            return False
+            
         # Validate prediction structure
         required_times = ["tiempo_completo", "primer_tiempo", "segundo_tiempo"]
         for tiempo in required_times:
@@ -632,7 +641,85 @@ class PredictionEngineTest:
                 self.log(f"❌ Missing {tiempo} in prediction", "ERROR")
                 return False
                 
-        self.log("✅ Prediction with season_id working correctly")
+            tiempo_data = pronostico[tiempo]
+            
+            # NEW FEATURE 1: Validate over_under field
+            if "over_under" not in tiempo_data:
+                self.log(f"❌ Missing over_under in {tiempo}", "ERROR")
+                return False
+                
+            over_under = tiempo_data["over_under"]
+            required_over_under = ["over_15", "over_25", "over_35"]
+            for ou in required_over_under:
+                if ou not in over_under:
+                    self.log(f"❌ Missing {ou} in over_under for {tiempo}", "ERROR")
+                    return False
+                    
+                ou_data = over_under[ou]
+                if "prediccion" not in ou_data or "probabilidad" not in ou_data:
+                    self.log(f"❌ Missing prediccion/probabilidad in {ou} for {tiempo}", "ERROR")
+                    return False
+                    
+                if ou_data["prediccion"] not in ["OVER", "UNDER"]:
+                    self.log(f"❌ Invalid prediccion value in {ou}: {ou_data['prediccion']}", "ERROR")
+                    return False
+            
+            # NEW FEATURE 2: Validate goles_esperados field
+            if "goles_esperados" not in tiempo_data:
+                self.log(f"❌ Missing goles_esperados in {tiempo}", "ERROR")
+                return False
+                
+            goles_esperados = tiempo_data["goles_esperados"]
+            required_goles = ["local", "visitante", "total"]
+            for gol in required_goles:
+                if gol not in goles_esperados:
+                    self.log(f"❌ Missing {gol} in goles_esperados for {tiempo}", "ERROR")
+                    return False
+                    
+                if not isinstance(goles_esperados[gol], (int, float)):
+                    self.log(f"❌ Invalid goles_esperados value for {gol}: {goles_esperados[gol]}", "ERROR")
+                    return False
+                    
+        # NEW FEATURE 3: Validate forma_reciente field
+        if "forma_reciente" not in pronostico:
+            self.log("❌ Missing forma_reciente in prediction", "ERROR")
+            return False
+            
+        forma_reciente = pronostico["forma_reciente"]
+        required_equipos = ["local", "visitante"]
+        for equipo in required_equipos:
+            if equipo not in forma_reciente:
+                self.log(f"❌ Missing {equipo} in forma_reciente", "ERROR")
+                return False
+                
+            forma_data = forma_reciente[equipo]
+            required_forma_fields = ["ultimos_5", "rendimiento", "racha"]
+            for field in required_forma_fields:
+                if field not in forma_data:
+                    self.log(f"❌ Missing {field} in forma_reciente.{equipo}", "ERROR")
+                    return False
+                    
+            # Validate ultimos_5 is a list of V/E/D
+            ultimos_5 = forma_data["ultimos_5"]
+            if not isinstance(ultimos_5, list):
+                self.log(f"❌ ultimos_5 should be a list, got {type(ultimos_5)}", "ERROR")
+                return False
+                
+            for resultado in ultimos_5:
+                if resultado not in ["V", "E", "D"]:
+                    self.log(f"❌ Invalid resultado in ultimos_5: {resultado}", "ERROR")
+                    return False
+                    
+            # Validate rendimiento is numeric
+            if not isinstance(forma_data["rendimiento"], (int, float)):
+                self.log(f"❌ rendimiento should be numeric, got {type(forma_data['rendimiento'])}", "ERROR")
+                return False
+                
+        self.log("✅ Prediction with season_id + NEW FEATURES working correctly")
+        self.log(f"   - season_id: {pronostico['season_id']}")
+        self.log(f"   - over_under: ✅ (1.5, 2.5, 3.5 for all times)")
+        self.log(f"   - goles_esperados: ✅ (local, visitante, total for all times)")
+        self.log(f"   - forma_reciente: ✅ (ultimos_5, rendimiento, racha for both teams)")
         self.test_results["prediction_season_id"] = True
         return True
 
