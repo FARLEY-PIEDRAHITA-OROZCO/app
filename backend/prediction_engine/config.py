@@ -166,6 +166,15 @@ class Umbrales:
     FACTOR_2_MIN: float = 20.0  # Factor 2: rendimiento > 20%
     # Factor 1: rendimiento <= 20%
     
+    # --- Umbrales de Over/Under ---
+    OVER_25_UMBRAL: float = 2.5  # Umbral para Over 2.5 goles
+    OVER_15_UMBRAL: float = 1.5  # Umbral para Over 1.5 goles
+    OVER_35_UMBRAL: float = 3.5  # Umbral para Over 3.5 goles
+    
+    # --- Forma Reciente ---
+    PARTIDOS_FORMA_RECIENTE: int = 5  # Últimos N partidos para forma
+    PESO_FORMA_RECIENTE: float = 0.3  # Peso de forma reciente vs temporada completa
+    
     @classmethod
     def to_dict(cls) -> Dict[str, float]:
         """
