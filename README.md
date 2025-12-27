@@ -9,6 +9,17 @@ Convierte la lógica compleja del Excel (526,550+ fórmulas) en una aplicación 
 - **Backend:** Python 3.11 + FastAPI + Motor (MongoDB async)
 - **Frontend:** React 18 + React Router + Axios
 - **Base de Datos:** MongoDB
+- **Data Source:** API-Football
+
+---
+
+## 🆕 Novedades v3.0.1 (Diciembre 2024)
+
+- ✅ **Sistema de Temporadas (`season_id`):** Filtrado completo por temporada en todas las páginas
+- ✅ **Selector de Temporada:** Componente reutilizable en Dashboard, Clasificación, Equipos, Partidos
+- ✅ **Dashboard Mejorado:** Toggle Vista Global / Por Temporada
+- ✅ **Exportación por Temporada:** CSV/JSON filtrado por `season_id`
+- ✅ **Documentación Completa:** Guías técnicas detalladas
 
 ---
 
@@ -122,6 +133,12 @@ La aplicación estará disponible en:
 Antes de generar pronósticos, debes construir las estadísticas:
 
 ```bash
+# Usando season_id (recomendado)
+curl -X POST "http://localhost:8001/api/prediction/build-stats" \
+  -H "Content-Type: application/json" \
+  -d '{"season_id": "SPAIN_LA_LIGA_2023-24"}'
+
+# O usando liga_id y temporada (legacy)
 curl -X POST "http://localhost:8001/api/prediction/build-stats" \
   -H "Content-Type: application/json" \
   -d '{"liga_id": "SPAIN_LA_LIGA", "temporada": 2023}'
@@ -146,16 +163,22 @@ Si necesitas datos frescos de la API:
 ```
 app/
 ├── README.md                    # Esta documentación
+├── docs/
+│   ├── MOTOR_PRONOSTICOS.md     # Documentación técnica del algoritmo
+│   ├── ANALISIS_SEASON_ID.md    # Análisis de implementación season_id
+│   └── API_REFERENCE.md         # Referencia completa de la API
 ├── backend/
 │   ├── server.py                # Servidor FastAPI principal
 │   ├── requirements.txt         # Dependencias Python
 │   ├── .env                     # Variables de entorno
+│   ├── migrate_season_id.py     # Script de migración de datos
 │   ├── api_football/            # Módulo de extracción de datos
 │   │   ├── api_client.py        # Cliente API-Football
 │   │   ├── data_transformer.py  # Transformación de datos
 │   │   └── db_manager.py        # Gestor de base de datos
 │   └── prediction_engine/       # Motor de pronósticos PLLA 3.0
 │       ├── config.py            # Umbrales y configuración
+│       ├── models.py            # Modelos Pydantic
 │       ├── stats_builder.py     # Constructor de estadísticas
 │       ├── classification.py    # Motor de clasificación
 │       ├── prediction_engine.py # Motor de pronósticos
@@ -164,10 +187,12 @@ app/
     ├── package.json             # Dependencias Node.js
     ├── .env                     # Variables de entorno
     └── src/
-        ├── App.js               # Componente principal
-        ├── components/          # Componentes reutilizables
-        └── pages/               # Páginas de la aplicación
-            ├── Dashboard.jsx    # Página principal
+        ├── App.js               # Componente principal y rutas
+        ├── components/
+        │   ├── Layout.jsx       # Layout con sidebar
+        │   └── SeasonSelector.jsx # Selector de temporadas (NUEVO)
+        └── pages/
+            ├── Dashboard.jsx    # Página principal (Vista Global/Temporada)
             ├── Predictions.jsx  # Generador de pronósticos
             ├── Classification.jsx # Tabla de posiciones
             ├── TeamStats.jsx    # Estadísticas por equipo
@@ -184,43 +209,60 @@ app/
 - ✅ **Doble Oportunidad:** 1X / X2 / 12
 - ✅ **Ambos Marcan:** SI / NO
 - ✅ **Tres Tiempos:** Completo (90min), 1er Tiempo, 2do Tiempo
-- ✅ **Clasificación:** Tablas de posiciones por liga
+- ✅ **Clasificación:** Tablas de posiciones por liga y temporada
 - ✅ **Estadísticas:** Por equipo, local y visitante
 
+### Sistema de Temporadas
+- ✅ **`season_id`:** Identificador único por temporada (ej: `SPAIN_LA_LIGA_2023-24`)
+- ✅ **Selector de Temporada:** Componente reutilizable en todas las páginas
+- ✅ **Filtrado por Temporada:** Dashboard, Clasificación, Equipos, Partidos
+- ✅ **Exportación Filtrada:** CSV/JSON por temporada
+- ✅ **Compatibilidad Legacy:** Soporte para `liga_id` + `temporada`
+
 ### Interfaz Web
-- ✅ Dashboard con estadísticas generales
+- ✅ Dashboard con Vista Global y Por Temporada
 - ✅ Generador interactivo de pronósticos
-- ✅ Tablas de clasificación con selector de tiempo
+- ✅ Tablas de clasificación con selector de tiempo y temporada
 - ✅ Visualización de estadísticas por equipo
-- ✅ Historial de partidos
+- ✅ Historial de partidos con paginación
 - ✅ Módulo de extracción de datos
+- ✅ Exportación CSV/JSON
 
 ---
 
 ## 🔌 API Endpoints
+
+### Temporadas (NUEVO)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/seasons` | Lista de temporadas disponibles |
+| GET | `/api/seasons/{season_id}` | Detalle de una temporada |
 
 ### Pronósticos
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
 | POST | `/api/prediction/build-stats` | Construye estadísticas de equipos |
-| GET | `/api/prediction/classification` | Tabla de clasificación |
+| GET | `/api/prediction/classification?season_id=X` | Tabla de clasificación |
 | POST | `/api/prediction/generate` | **Genera pronóstico** |
-| GET | `/api/prediction/team/{nombre}` | Stats de un equipo |
+| GET | `/api/prediction/team/{nombre}?season_id=X` | Stats de un equipo |
 | POST | `/api/prediction/validate` | Valida pronóstico vs resultado |
-| GET | `/api/prediction/teams` | Lista de equipos |
+| GET | `/api/prediction/teams?season_id=X` | Lista de equipos |
+| GET | `/api/prediction/config` | Configuración del algoritmo |
+| GET | `/api/prediction/effectiveness` | Métricas de efectividad |
 
 ### Datos
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| GET | `/api/stats` | Estadísticas generales |
+| GET | `/api/stats?season_id=X` | Estadísticas generales (filtrable) |
 | GET | `/api/leagues` | Lista de ligas |
-| GET | `/api/matches` | Lista de partidos |
-| POST | `/api/scrape/start` | Iniciar extracción |
-| GET | `/api/scrape/status` | Estado de extracción |
+| POST | `/api/matches/search` | Buscar partidos con filtros |
+| POST | `/api/export` | Exportar datos CSV/JSON |
+| POST | `/api/scrape-league` | Iniciar extracción |
 
-### Ejemplo: Generar Pronóstico
+### Ejemplo: Generar Pronóstico con season_id
 
 ```bash
 curl -X POST "http://localhost:8001/api/prediction/generate" \
@@ -228,8 +270,7 @@ curl -X POST "http://localhost:8001/api/prediction/generate" \
   -d '{
     "equipo_local": "Barcelona",
     "equipo_visitante": "Real Madrid",
-    "liga_id": "SPAIN_LA_LIGA",
-    "temporada": 2023
+    "season_id": "SPAIN_LA_LIGA_2023-24"
   }'
 ```
 
@@ -240,6 +281,7 @@ curl -X POST "http://localhost:8001/api/prediction/generate" \
   "pronostico": {
     "equipo_local": "Barcelona",
     "equipo_visitante": "Real Madrid",
+    "season_id": "SPAIN_LA_LIGA_2023-24",
     "tiempo_completo": {
       "pronostico": "E",
       "doble_oportunidad": "1X",
@@ -250,7 +292,9 @@ curl -X POST "http://localhost:8001/api/prediction/generate" \
         "visita": 35.27
       },
       "confianza": 42.54
-    }
+    },
+    "primer_tiempo": { ... },
+    "segundo_tiempo": { ... }
   }
 }
 ```
@@ -287,10 +331,28 @@ curl -X POST "http://localhost:8001/api/prediction/generate" \
 
 | Colección | Descripción |
 |-----------|-------------|
-| `football_matches` | Partidos históricos |
-| `team_statistics` | Estadísticas por equipo |
+| `football_matches` | Partidos históricos con `season_id` y `match_id` |
+| `team_statistics` | Estadísticas por equipo y temporada |
 | `predictions` | Pronósticos generados |
 | `validations` | Validaciones post-partido |
+
+### Schema de Partidos
+
+```javascript
+{
+  "match_id": "SPAIN_LA_LIGA_2023-24_12345",    // ID único
+  "season_id": "SPAIN_LA_LIGA_2023-24",         // Temporada
+  "liga_id": "SPAIN_LA_LIGA",
+  "equipo_local": "Barcelona",
+  "equipo_visitante": "Real Madrid",
+  "fecha_partido": "2023-10-28T20:00:00Z",
+  "goles_local_TR": 2,
+  "goles_visitante_TR": 1,
+  "goles_local_1MT": 1,
+  "goles_visitante_1MT": 0,
+  "ronda": "Regular Season - 10"
+}
+```
 
 ---
 
@@ -321,6 +383,15 @@ https://dashboard.api-football.com
 2. Asegúrate de que el backend esté corriendo en el puerto 8001
 3. Reinicia el frontend después de cambiar el `.env`
 
+### Error 404 al cargar estadísticas
+
+Las estadísticas deben construirse primero:
+```bash
+curl -X POST "http://localhost:8001/api/prediction/build-stats" \
+  -H "Content-Type: application/json" \
+  -d '{"season_id": "SPAIN_LA_LIGA_2023-24"}'
+```
+
 ---
 
 ## 📊 Arquitectura
@@ -331,26 +402,56 @@ https://dashboard.api-football.com
 │    (React)      │ ←→  │    (FastAPI)    │ ←→  │    (MongoDB)    │
 │    Port 3000    │     │    Port 8001    │     │                 │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
-                               │
-                  ┌────────────┴────────────┐
-                  │    PREDICTION ENGINE    │
-                  │    (Motor PLLA 3.0)     │
-                  └─────────────────────────┘
+         │                      │                       │
+         │              ┌───────┴───────┐               │
+         │              │   MODULES     │               │
+         │              │               │               │
+         │              │ ┌───────────┐ │               │
+         │              │ │ api_      │ │←──── API-Football
+         │              │ │ football/ │ │
+         │              │ └───────────┘ │
+         │              │               │
+         │              │ ┌───────────┐ │
+         │              │ │ prediction│ │
+         │              │ │ _engine/  │ │
+         │              │ └───────────┘ │
+         │              └───────────────┘
+         │
+    SeasonSelector ←── Filtrado por temporada en todas las páginas
 ```
 
 ---
 
 ## 📚 Documentación Adicional
 
-- **[Motor de Pronósticos (Documentación Técnica)](/docs/MOTOR_PRONOSTICOS.md)** - Explicación detallada del algoritmo, fórmulas, umbrales y cómo mejorar el sistema
+- **[Motor de Pronósticos](/docs/MOTOR_PRONOSTICOS.md)** - Algoritmo detallado, fórmulas y umbrales
+- **[Análisis Season ID](/docs/ANALISIS_SEASON_ID.md)** - Implementación del sistema de temporadas
+- **[Referencia API](/docs/API_REFERENCE.md)** - Documentación completa de endpoints
 
 ---
 
 ## 📝 Versiones
 
-- **Sistema PLLA:** 3.0
-- **Algoritmo:** v1.0.0
-- **API:** v1.0.0
+| Componente | Versión |
+|------------|--------|
+| Sistema PLLA | 3.0.1 |
+| Algoritmo | v1.0.0 |
+| API | v1.1.0 |
+| Frontend | v1.1.0 |
+
+### Changelog
+
+**v3.0.1 (Diciembre 2024)**
+- Implementación completa de `season_id` en backend y frontend
+- Nuevo componente `SeasonSelector`
+- Dashboard con Vista Global / Por Temporada
+- Exportación filtrada por temporada
+- Documentación actualizada
+
+**v3.0.0 (Diciembre 2024)**
+- Versión inicial del Motor PLLA 3.0
+- Sistema de pronósticos completo
+- Integración con API-Football
 
 ---
 
