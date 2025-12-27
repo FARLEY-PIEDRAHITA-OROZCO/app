@@ -1096,7 +1096,9 @@ class PredictionEngineTest:
             self.test_16_stats_season_view,
             # Multi-league support tests
             self.test_17_leagues_list,
-            self.test_18_seasons_by_league
+            self.test_18_seasons_by_league,
+            # NEW PLLA 3.0 Features test
+            self.test_19_new_plla_features
         ]
         
         passed = 0
