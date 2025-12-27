@@ -435,27 +435,35 @@ class Pronostico(BaseModelConfig):
             'equipo_local': self.equipo_local,
             'equipo_visitante': self.equipo_visitante,
             'liga_id': self.liga_id,
+            'season_id': self.season_id,
             'tiempo_completo': {
                 'pronostico': self.tiempo_completo.pronostico,
                 'doble_oportunidad': self.tiempo_completo.doble_oportunidad,
                 'ambos_marcan': self.tiempo_completo.ambos_marcan,
                 'probabilidades': self.tiempo_completo.probabilidades.to_dict(),
-                'confianza': self.tiempo_completo.confianza
+                'confianza': self.tiempo_completo.confianza,
+                'over_under': self.tiempo_completo.over_under,
+                'goles_esperados': self.tiempo_completo.goles_esperados
             },
             'primer_tiempo': {
                 'pronostico': self.primer_tiempo.pronostico,
                 'doble_oportunidad': self.primer_tiempo.doble_oportunidad,
                 'ambos_marcan': self.primer_tiempo.ambos_marcan,
                 'probabilidades': self.primer_tiempo.probabilidades.to_dict(),
-                'confianza': self.primer_tiempo.confianza
+                'confianza': self.primer_tiempo.confianza,
+                'over_under': self.primer_tiempo.over_under,
+                'goles_esperados': self.primer_tiempo.goles_esperados
             },
             'segundo_tiempo': {
                 'pronostico': self.segundo_tiempo.pronostico,
                 'doble_oportunidad': self.segundo_tiempo.doble_oportunidad,
                 'ambos_marcan': self.segundo_tiempo.ambos_marcan,
                 'probabilidades': self.segundo_tiempo.probabilidades.to_dict(),
-                'confianza': self.segundo_tiempo.confianza
+                'confianza': self.segundo_tiempo.confianza,
+                'over_under': self.segundo_tiempo.over_under,
+                'goles_esperados': self.segundo_tiempo.goles_esperados
             },
+            'forma_reciente': self.forma_reciente,
             'version_algoritmo': self.version_algoritmo,
             'fecha_generacion': self.fecha_generacion.isoformat()
         }
