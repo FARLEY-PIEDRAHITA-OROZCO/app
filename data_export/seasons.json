@@ -1,0 +1,28 @@
+[
+  {
+    "season_id": "SPAIN_LA_LIGA_2023-24",
+    "created_at": "2025-12-27T00:48:11.121659",
+    "equipos_count": 20,
+    "estado": "completada",
+    "fecha_fin": "2024-05-26",
+    "fecha_inicio": "2023-08-11",
+    "label": "2023-24",
+    "liga_id": "SPAIN_LA_LIGA",
+    "total_partidos": 380,
+    "updated_at": "2025-12-27T00:48:11.121661",
+    "year": 2023
+  },
+  {
+    "season_id": "ENGLAND_PREMIER_LEAGUE_2022-23",
+    "created_at": "2025-12-27T07:35:22.402000",
+    "equipos_count": 20,
+    "estado": "completada",
+    "fecha_fin": null,
+    "fecha_inicio": null,
+    "label": "2022-23",
+    "liga_id": "ENGLAND_PREMIER_LEAGUE",
+    "total_partidos": 380,
+    "updated_at": "2025-12-27T07:35:22.402000",
+    "year": 2022
+  }
+]
