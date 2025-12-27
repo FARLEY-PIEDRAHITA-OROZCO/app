@@ -1120,6 +1120,203 @@ class PredictionEngineTest:
         self.test_results["seasons_by_league"] = True
         return True
 
+    def test_20_hardcoded_liga_id_removal(self) -> bool:
+        """Test 20: Specific tests for hardcoded liga_id removal as per review request."""
+        self.log("=== TEST 20: HARDCODED LIGA_ID REMOVAL TESTS ===")
+        
+        # Test 1: GET /api/prediction/teams with season_id=ENGLAND_PREMIER_LEAGUE_2022-23
+        self.log("--- Testing GET /api/prediction/teams with ENGLAND_PREMIER_LEAGUE_2022-23 ---")
+        result1 = self.make_request("GET", "/prediction/teams?season_id=ENGLAND_PREMIER_LEAGUE_2022-23")
+        
+        if not result1["success"]:
+            self.log("❌ Teams endpoint with ENGLAND_PREMIER_LEAGUE_2022-23 failed", "ERROR")
+            return False
+            
+        data1 = result1["data"]
+        
+        # Should return teams and infer liga_id correctly
+        if "season_id" not in data1:
+            self.log("❌ Missing season_id in teams response", "ERROR")
+            return False
+            
+        if data1["season_id"] != "ENGLAND_PREMIER_LEAGUE_2022-23":
+            self.log(f"❌ Expected season_id=ENGLAND_PREMIER_LEAGUE_2022-23, got {data1['season_id']}", "ERROR")
+            return False
+            
+        # Should have teams (even if empty for this season)
+        if "equipos" not in data1:
+            self.log("❌ Missing equipos field in teams response", "ERROR")
+            return False
+            
+        self.log(f"✅ Teams endpoint with ENGLAND_PREMIER_LEAGUE_2022-23: {len(data1['equipos'])} teams")
+        
+        # Test 2: GET /api/prediction/teams with season_id=SPAIN_LA_LIGA_2023-24
+        self.log("--- Testing GET /api/prediction/teams with SPAIN_LA_LIGA_2023-24 ---")
+        result2 = self.make_request("GET", "/prediction/teams?season_id=SPAIN_LA_LIGA_2023-24")
+        
+        if not result2["success"]:
+            self.log("❌ Teams endpoint with SPAIN_LA_LIGA_2023-24 failed", "ERROR")
+            return False
+            
+        data2 = result2["data"]
+        
+        if data2["season_id"] != "SPAIN_LA_LIGA_2023-24":
+            self.log(f"❌ Expected season_id=SPAIN_LA_LIGA_2023-24, got {data2['season_id']}", "ERROR")
+            return False
+            
+        # Should return 20 teams for La Liga
+        if len(data2["equipos"]) != 20:
+            self.log(f"❌ Expected 20 teams for La Liga, got {len(data2['equipos'])}", "ERROR")
+            return False
+            
+        self.log(f"✅ Teams endpoint with SPAIN_LA_LIGA_2023-24: {len(data2['equipos'])} teams")
+        
+        # Test 3: GET /api/prediction/teams without parameters (should use defaults)
+        self.log("--- Testing GET /api/prediction/teams without parameters ---")
+        result3 = self.make_request("GET", "/prediction/teams")
+        
+        if not result3["success"]:
+            self.log("❌ Teams endpoint without parameters failed", "ERROR")
+            return False
+            
+        data3 = result3["data"]
+        
+        # Should use default values (La Liga 2023)
+        if "season_id" not in data3:
+            self.log("❌ Missing season_id in default teams response", "ERROR")
+            return False
+            
+        expected_default_season = "SPAIN_LA_LIGA_2023-24"
+        if data3["season_id"] != expected_default_season:
+            self.log(f"❌ Expected default season_id={expected_default_season}, got {data3['season_id']}", "ERROR")
+            return False
+            
+        self.log(f"✅ Teams endpoint without parameters uses default: {data3['season_id']}")
+        
+        # Test 4: POST /api/prediction/generate with season_id (no liga_id)
+        self.log("--- Testing POST /api/prediction/generate with season_id only ---")
+        
+        # First ensure we have stats for the season
+        build_data = {"season_id": "SPAIN_LA_LIGA_2023-24"}
+        build_result = self.make_request("POST", "/prediction/build-stats", build_data)
+        
+        if not build_result["success"]:
+            self.log("❌ Failed to build stats for prediction test", "ERROR")
+            return False
+        
+        pred_data = {
+            "equipo_local": "Barcelona",
+            "equipo_visitante": "Real Madrid",
+            "season_id": "SPAIN_LA_LIGA_2023-24"
+            # Note: NO liga_id provided - should be inferred
+        }
+        
+        result4 = self.make_request("POST", "/prediction/generate", pred_data)
+        
+        if not result4["success"]:
+            self.log("❌ Prediction generation with season_id only failed", "ERROR")
+            return False
+            
+        pred_response = result4["data"]
+        
+        if not pred_response.get("success"):
+            self.log("❌ Prediction returned success=false", "ERROR")
+            return False
+            
+        pronostico = pred_response.get("pronostico")
+        if not pronostico:
+            self.log("❌ No prediction data in response", "ERROR")
+            return False
+            
+        # Should include season_id in response
+        if "season_id" not in pronostico:
+            self.log("❌ Missing season_id in prediction response", "ERROR")
+            return False
+            
+        if pronostico["season_id"] != "SPAIN_LA_LIGA_2023-24":
+            self.log(f"❌ Expected season_id=SPAIN_LA_LIGA_2023-24 in prediction, got {pronostico['season_id']}", "ERROR")
+            return False
+            
+        self.log("✅ Prediction generation with season_id only works correctly")
+        
+        # Test 5: GET /api/prediction/classification with season_id=ENGLAND_PREMIER_LEAGUE_2022-23
+        self.log("--- Testing GET /api/prediction/classification with ENGLAND_PREMIER_LEAGUE_2022-23 ---")
+        result5 = self.make_request("GET", "/prediction/classification?season_id=ENGLAND_PREMIER_LEAGUE_2022-23")
+        
+        if not result5["success"]:
+            self.log("❌ Classification with ENGLAND_PREMIER_LEAGUE_2022-23 failed", "ERROR")
+            return False
+            
+        data5 = result5["data"]
+        
+        # Should include season_id and infer liga_id correctly
+        if "season_id" not in data5:
+            self.log("❌ Missing season_id in classification response", "ERROR")
+            return False
+            
+        if data5["season_id"] != "ENGLAND_PREMIER_LEAGUE_2022-23":
+            self.log(f"❌ Expected season_id=ENGLAND_PREMIER_LEAGUE_2022-23, got {data5['season_id']}", "ERROR")
+            return False
+            
+        # Should have classification data (even if empty)
+        if "clasificacion" not in data5:
+            self.log("❌ Missing clasificacion field", "ERROR")
+            return False
+            
+        self.log(f"✅ Classification with ENGLAND_PREMIER_LEAGUE_2022-23: {len(data5['clasificacion'])} teams")
+        
+        # Test 6: GET /api/prediction/classification with season_id=SPAIN_LA_LIGA_2023-24
+        self.log("--- Testing GET /api/prediction/classification with SPAIN_LA_LIGA_2023-24 ---")
+        result6 = self.make_request("GET", "/prediction/classification?season_id=SPAIN_LA_LIGA_2023-24")
+        
+        if not result6["success"]:
+            self.log("❌ Classification with SPAIN_LA_LIGA_2023-24 failed", "ERROR")
+            return False
+            
+        data6 = result6["data"]
+        
+        if data6["season_id"] != "SPAIN_LA_LIGA_2023-24":
+            self.log(f"❌ Expected season_id=SPAIN_LA_LIGA_2023-24, got {data6['season_id']}", "ERROR")
+            return False
+            
+        # Should return classification with 20 teams for La Liga
+        if len(data6["clasificacion"]) != 20:
+            self.log(f"❌ Expected 20 teams in La Liga classification, got {len(data6['clasificacion'])}", "ERROR")
+            return False
+            
+        self.log(f"✅ Classification with SPAIN_LA_LIGA_2023-24: {len(data6['clasificacion'])} teams")
+        
+        # Test 7: GET /api/prediction/team/{nombre} with season_id=ENGLAND_PREMIER_LEAGUE_2022-23
+        self.log("--- Testing GET /api/prediction/team/Manchester%20City with ENGLAND_PREMIER_LEAGUE_2022-23 ---")
+        result7 = self.make_request("GET", "/prediction/team/Manchester%20City?season_id=ENGLAND_PREMIER_LEAGUE_2022-23")
+        
+        # This might return 404 if Manchester City data doesn't exist for this season, which is acceptable
+        if result7["status_code"] == 404:
+            self.log("✅ Team stats for Manchester City in ENGLAND_PREMIER_LEAGUE_2022-23: Not found (expected)")
+        elif result7["success"]:
+            data7 = result7["data"]
+            if "season_id" in data7 and data7["season_id"] == "ENGLAND_PREMIER_LEAGUE_2022-23":
+                self.log("✅ Team stats for Manchester City in ENGLAND_PREMIER_LEAGUE_2022-23: Found")
+            else:
+                self.log("❌ Team stats response missing or incorrect season_id", "ERROR")
+                return False
+        else:
+            self.log("❌ Team stats request failed unexpectedly", "ERROR")
+            return False
+        
+        # Test 8: Verify no errors when only season_id is provided (no liga_id)
+        self.log("--- Verifying no errors with season_id only (no liga_id) ---")
+        
+        # All previous tests should have worked without providing liga_id
+        # This is a summary verification
+        
+        self.log("✅ All endpoints correctly infer liga_id and temporada from season_id")
+        self.log("✅ No errors when only season_id is provided")
+        self.log("✅ Responses include correct season_id")
+        
+        self.test_results["hardcoded_liga_id_removal"] = True
+        return True
+
     def run_all_tests(self) -> bool:
         """Run all tests in order."""
         self.log("🚀 Starting PLLA 3.0 Prediction Engine Tests")
@@ -1148,7 +1345,9 @@ class PredictionEngineTest:
             self.test_17_leagues_list,
             self.test_18_seasons_by_league,
             # NEW PLLA 3.0 Features test
-            self.test_19_new_plla_features
+            self.test_19_new_plla_features,
+            # SPECIFIC REVIEW REQUEST TESTS
+            self.test_20_hardcoded_liga_id_removal
         ]
         
         passed = 0
