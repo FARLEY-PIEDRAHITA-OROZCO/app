@@ -2,14 +2,16 @@
  * Página de Partidos - Motor PLLA 3.0
  * 
  * Consulta y exporta datos de partidos con:
+ * - Selector de liga
  * - Filtro por temporada (season_id)
- * - Filtro por liga, fechas, equipo
+ * - Filtro por fechas, equipo
  * - Exportación CSV/JSON
  */
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Download, Filter, Calendar } from 'lucide-react';
+import { Search, Download, Filter, Calendar, Globe } from 'lucide-react';
+import LeagueSelector from '../components/LeagueSelector';
 import SeasonSelector from '../components/SeasonSelector';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -17,11 +19,10 @@ const API = `${BACKEND_URL}/api`;
 
 const Matches = () => {
   const [matches, setMatches] = useState([]);
-  const [leagues, setLeagues] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [ligaId, setLigaId] = useState('');
   const [seasonId, setSeasonId] = useState('');
   const [filters, setFilters] = useState({
-    liga_id: '',
     fecha_inicio: '',
     fecha_fin: '',
     equipo: '',
@@ -31,25 +32,25 @@ const Matches = () => {
   const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 1 });
 
   useEffect(() => {
-    fetchLeagues();
-  }, []);
-
-  useEffect(() => {
     if (seasonId) {
       fetchMatches();
+    } else {
+      setMatches([]);
+      setPagination({ total: 0, page: 1, pages: 1 });
     }
   }, [seasonId]);
 
-  const fetchLeagues = async () => {
-    try {
-      const response = await axios.get(`${API}/leagues`);
-      setLeagues(response.data);
-    } catch (error) {
-      console.error('Error fetching leagues:', error);
-    }
+  // Cuando cambia la liga, resetear temporada
+  const handleLigaChange = (newLigaId) => {
+    setLigaId(newLigaId);
+    setSeasonId('');
+    setMatches([]);
+    setPagination({ total: 0, page: 1, pages: 1 });
   };
 
   const fetchMatches = async () => {
+    if (!seasonId) return;
+    
     setLoading(true);
     try {
       const searchFilters = {
@@ -89,7 +90,6 @@ const Matches = () => {
       const response = await axios.post(`${API}/export`, {
         format,
         season_id: seasonId,
-        liga_id: filters.liga_id || null,
         limit: 10000
       }, {
         responseType: format === 'csv' ? 'blob' : 'json'
@@ -150,11 +150,18 @@ const Matches = () => {
             <h3 style={{ fontSize: '1rem', fontWeight: '600' }}>Filtros</h3>
           </div>
           
-          <SeasonSelector 
-            ligaId="SPAIN_LA_LIGA"
-            value={seasonId}
-            onChange={setSeasonId}
-          />
+          {/* Selectores de Liga y Temporada */}
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <LeagueSelector 
+              value={ligaId}
+              onChange={handleLigaChange}
+            />
+            <SeasonSelector 
+              ligaId={ligaId}
+              value={seasonId}
+              onChange={setSeasonId}
+            />
+          </div>
         </div>
         
         <div style={{
@@ -163,25 +170,6 @@ const Matches = () => {
           gap: '1rem',
           marginBottom: '1rem'
         }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              Liga
-            </label>
-            <select
-              data-testid="filter-league"
-              value={filters.liga_id}
-              onChange={(e) => handleFilterChange('liga_id', e.target.value)}
-              style={{ width: '100%' }}
-            >
-              <option value="">Todas las ligas</option>
-              {leagues.map(league => (
-                <option key={league._id} value={league._id}>
-                  {league.liga_nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
               Fecha Inicio
@@ -264,10 +252,16 @@ const Matches = () => {
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
             {seasonId && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <Calendar size={14} />
-                {seasonId.split('_').pop()}
-              </span>
+              <>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <Globe size={14} />
+                  {ligaId?.replace(/_/g, ' ')}
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <Calendar size={14} />
+                  {seasonId.split('_').pop()}
+                </span>
+              </>
             )}
             <span>Página {pagination.page} de {pagination.pages}</span>
           </div>
@@ -275,8 +269,8 @@ const Matches = () => {
 
         {!seasonId ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-            <Calendar size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-            <p>Selecciona una temporada para ver los partidos</p>
+            <Globe size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+            <p>Selecciona una liga y temporada para ver los partidos</p>
           </div>
         ) : loading ? (
           <div style={{ textAlign: 'center', padding: '2rem' }}>Cargando...</div>
