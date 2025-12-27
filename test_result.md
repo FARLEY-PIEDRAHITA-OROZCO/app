@@ -305,15 +305,18 @@ backend:
 
   - task: "Dashboard with season_id filter"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/Dashboard.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado Dashboard con toggle Vista Global / Por Temporada. Integra SeasonSelector y muestra estadísticas filtradas por season_id. Nuevo backend endpoint GET /api/stats?season_id= funciona."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Dashboard funciona correctamente. Implementa toggle Vista Global/Por Temporada, integra SeasonSelector, muestra badge 'Temporada: 2023-24' en modo temporada, tabla cambia de 'Top 10 Ligas' a 'Partidos por Jornada'. Backend /api/stats responde correctamente en ambos modos."
 
   - task: "Stats endpoint with season_id parameter"
     implemented: true
