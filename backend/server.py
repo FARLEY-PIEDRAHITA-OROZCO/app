@@ -500,8 +500,8 @@ async def build_statistics(request: ConstruirStatsRequest):
 
 @api_router.get("/prediction/classification")
 async def get_classification(
-    liga_id: str = "SPAIN_LA_LIGA",
-    temporada: int = 2023,
+    liga_id: Optional[str] = None,
+    temporada: Optional[int] = None,
     tipo_tiempo: str = "completo",
     season_id: Optional[str] = None
 ):
@@ -509,8 +509,8 @@ async def get_classification(
     Obtiene la tabla de clasificación.
     
     **Parámetros:**
-    - `liga_id`: ID de la liga
-    - `temporada`: Año de la temporada (legacy)
+    - `liga_id`: ID de la liga (opcional, se infiere de season_id)
+    - `temporada`: Año de la temporada (legacy, se infiere de season_id)
     - `tipo_tiempo`: "completo", "primer_tiempo" o "segundo_tiempo"
     - `season_id`: ID estructurado de temporada (preferido)
     
@@ -518,6 +518,26 @@ async def get_classification(
     - Tabla de posiciones ordenada por puntos
     """
     try:
+        # Inferir liga_id y temporada de season_id si no se proporcionan
+        effective_liga_id = liga_id
+        effective_temporada = temporada
+        
+        if season_id:
+            parts = season_id.rsplit('_', 1)
+            if len(parts) == 2:
+                if not effective_liga_id:
+                    effective_liga_id = parts[0]
+                try:
+                    if not effective_temporada:
+                        effective_temporada = int(parts[1].split('-')[0])
+                except ValueError:
+                    pass
+        
+        # Valores por defecto solo si no se puede inferir nada
+        if not effective_liga_id:
+            effective_liga_id = "SPAIN_LA_LIGA"
+        if not effective_temporada:
+            effective_temporada = 2023
         # Mapear tipo de tiempo
         tiempo_map = {
             "completo": TipoTiempo.COMPLETO,
