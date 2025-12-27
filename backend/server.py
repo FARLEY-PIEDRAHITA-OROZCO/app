@@ -83,28 +83,45 @@ async def root():
     return {"message": "Football Data API", "version": "1.0.0"}
 
 @api_router.get("/stats")
-async def get_stats():
-    """Obtener estadísticas generales."""
+async def get_stats(season_id: str = None):
+    """Obtener estadísticas generales, opcionalmente filtradas por temporada."""
     try:
         collection = db.football_matches
         
-        # Total de partidos
-        total_matches = await collection.count_documents({})
+        # Filtro base (vacío o por season_id)
+        match_filter = {"season_id": season_id} if season_id else {}
         
-        # Partidos por liga
-        pipeline_leagues = [
-            {"$group": {
-                "_id": "$liga_id",
-                "total": {"$sum": 1},
-                "liga_nombre": {"$first": "$liga_nombre"}
-            }},
-            {"$sort": {"total": -1}},
-            {"$limit": 10}
-        ]
+        # Total de partidos
+        total_matches = await collection.count_documents(match_filter)
+        
+        # Partidos por liga (o por temporada si hay filtro)
+        if season_id:
+            # Cuando hay filtro de temporada, mostrar estadísticas por jornada
+            pipeline_leagues = [
+                {"$match": match_filter},
+                {"$group": {
+                    "_id": "$ronda",
+                    "total": {"$sum": 1},
+                    "liga_nombre": {"$first": "$liga_nombre"}
+                }},
+                {"$sort": {"_id": 1}},
+                {"$limit": 10}
+            ]
+        else:
+            pipeline_leagues = [
+                {"$group": {
+                    "_id": "$liga_id",
+                    "total": {"$sum": 1},
+                    "liga_nombre": {"$first": "$liga_nombre"}
+                }},
+                {"$sort": {"total": -1}},
+                {"$limit": 10}
+            ]
         leagues_stats = await collection.aggregate(pipeline_leagues).to_list(10)
         
         # Promedio de goles
         pipeline_goals = [
+            {"$match": match_filter} if season_id else {"$match": {}},
             {"$group": {
                 "_id": None,
                 "avg_goals": {"$avg": {"$add": ["$goles_local_TR", "$goles_visitante_TR"]}},
@@ -114,14 +131,16 @@ async def get_stats():
         goals_stats = await collection.aggregate(pipeline_goals).to_list(1)
         
         # Últimos partidos procesados
+        find_filter = match_filter if season_id else {}
         recent_matches = await collection.find(
-            {},
+            find_filter,
             {"_id": 0, "created_at": 1}
         ).sort("created_at", -1).limit(1).to_list(1)
         
         last_update = recent_matches[0]["created_at"] if recent_matches else None
         
-        return {
+        # Información adicional si hay season_id
+        response = {
             "total_matches": total_matches,
             "total_leagues": len(leagues_stats),
             "leagues": leagues_stats,
@@ -129,6 +148,12 @@ async def get_stats():
             "total_goals": goals_stats[0]["total_goals"] if goals_stats else 0,
             "last_update": last_update
         }
+        
+        if season_id:
+            response["season_id"] = season_id
+            response["season_label"] = season_id.split("_")[-1] if "_" in season_id else season_id
+        
+        return response
     except Exception as e:
         logging.error(f"Error getting stats: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
