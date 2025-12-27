@@ -458,22 +458,36 @@ async def build_statistics(request: ConstruirStatsRequest):
     - `season_id`: ID estructurado de temporada (ej: SPAIN_LA_LIGA_2023-24)
     """
     try:
+        # Si se proporciona season_id, extraer liga_id de él
+        effective_liga_id = request.liga_id
+        effective_temporada = request.temporada
+        
+        if request.season_id:
+            # Formato: LIGA_ID_YYYY-YY (ej: ENGLAND_PREMIER_LEAGUE_2022-23)
+            parts = request.season_id.rsplit('_', 1)
+            if len(parts) == 2:
+                effective_liga_id = parts[0]  # ENGLAND_PREMIER_LEAGUE
+                try:
+                    effective_temporada = int(parts[1].split('-')[0])  # 2022
+                except ValueError:
+                    pass
+        
         equipos = await stats_builder.construir_estadisticas(
-            liga_id=request.liga_id,
-            temporada=request.temporada,
+            liga_id=effective_liga_id,
+            temporada=effective_temporada,
             season_id=request.season_id
         )
         
         # Determinar season_id efectivo para respuesta
         effective_season_id = request.season_id
-        if not effective_season_id and request.temporada:
-            effective_season_id = f"{request.liga_id}_{request.temporada}-{(request.temporada + 1) % 100:02d}"
+        if not effective_season_id and effective_temporada:
+            effective_season_id = f"{effective_liga_id}_{effective_temporada}-{(effective_temporada + 1) % 100:02d}"
         
         return {
             "success": True,
             "message": f"Estadísticas construidas para {len(equipos)} equipos",
-            "liga_id": request.liga_id,
-            "temporada": request.temporada,
+            "liga_id": effective_liga_id,
+            "temporada": effective_temporada,
             "season_id": effective_season_id,
             "equipos": list(equipos.keys())
         }
