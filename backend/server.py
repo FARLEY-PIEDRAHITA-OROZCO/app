@@ -920,44 +920,52 @@ async def list_seasons(liga_id: Optional[str] = None):
     - Lista de temporadas con información básica
     """
     try:
-        query = {}
+        # Siempre inferir de partidos reales para obtener datos actualizados
+        pipeline = [
+            {"$match": {"season_id": {"$exists": True, "$ne": None}}},
+            {"$group": {
+                "_id": "$season_id",
+                "liga_id": {"$first": "$liga_id"},
+                "total_partidos": {"$sum": 1},
+                "fecha_min": {"$min": "$fecha_partido"},
+                "fecha_max": {"$max": "$fecha_partido"}
+            }},
+            {"$sort": {"liga_id": 1, "_id": -1}}
+        ]
+        
+        # Aplicar filtro de liga si se proporciona
         if liga_id:
-            query["liga_id"] = liga_id
+            pipeline[0]["$match"]["liga_id"] = liga_id
         
-        seasons = await db.seasons.find(
-            query,
-            {"_id": 0}
-        ).sort([("year", -1), ("liga_id", 1)]).to_list(100)
+        agg_result = await db.football_matches.aggregate(pipeline).to_list(100)
         
-        # Si no hay temporadas en la colección seasons, inferir de partidos usando season_id
-        if not seasons:
-            pipeline = [
-                {"$match": {"season_id": {"$exists": True, "$ne": None}}},
-                {"$group": {
-                    "_id": "$season_id",
-                    "liga_id": {"$first": "$liga_id"},
-                    "total_partidos": {"$sum": 1},
-                    "fecha_min": {"$min": "$fecha_partido"},
-                    "fecha_max": {"$max": "$fecha_partido"}
-                }},
-                {"$sort": {"_id": -1}}
-            ]
+        seasons = []
+        for r in agg_result:
+            season_id = r["_id"]
+            liga = r["liga_id"]
+            # Extraer año del season_id (formato: LIGA_YYYY-YY)
+            try:
+                year_part = season_id.split("_")[-1]  # "2022-23"
+                year = int(year_part.split("-")[0])
+                label = year_part
+            except:
+                year = 2023
+                label = "2023-24"
             
-            # Aplicar filtro de liga si se proporciona
-            if liga_id:
-                pipeline[0]["$match"]["liga_id"] = liga_id
-            
-            agg_result = await db.football_matches.aggregate(pipeline).to_list(100)
-            
-            seasons = []
-            for r in agg_result:
-                season_id = r["_id"]
-                liga = r["liga_id"]
-                # Extraer año del season_id (formato: LIGA_YYYY-YY)
-                try:
-                    year_part = season_id.split("_")[-1]  # "2022-23"
-                    year = int(year_part.split("-")[0])
-                    label = year_part
+            seasons.append({
+                "season_id": season_id,
+                "liga_id": liga,
+                "year": year,
+                "label": label,
+                "total_partidos": r["total_partidos"],
+                "fecha_inicio": r.get("fecha_min"),
+                "fecha_fin": r.get("fecha_max")
+            })
+        
+        return {
+            "total": len(seasons),
+            "seasons": seasons
+        }
                 except:
                     year = 2023
                     label = "2023-24"
