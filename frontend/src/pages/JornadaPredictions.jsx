@@ -24,17 +24,22 @@ const JornadaPredictions = () => {
   useEffect(() => {
     if (seasonId) {
       fetchJornadas();
+    } else {
+      setJornadas([]);
     }
   }, [seasonId]);
 
   const fetchJornadas = async () => {
     try {
+      console.log('Fetching jornadas for:', seasonId);
       const response = await axios.get(`${API}/api/prediction/jornada?season_id=${seasonId}`);
+      console.log('Jornadas response:', response.data);
       setJornadas(response.data.jornadas || []);
       setSelectedJornada('');
       setPartidos([]);
     } catch (err) {
       console.error('Error fetching jornadas:', err);
+      setJornadas([]);
     }
   };
 
