@@ -103,4 +103,5 @@ __all__ = [
     'ClassificationEngine',
     'PredictionEngine',
     'ValidationEngine',
+    'BacktestingEngine',
 ]
