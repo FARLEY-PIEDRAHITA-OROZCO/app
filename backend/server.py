@@ -966,25 +966,6 @@ async def list_seasons(liga_id: Optional[str] = None):
             "total": len(seasons),
             "seasons": seasons
         }
-                except:
-                    year = 2023
-                    label = "2023-24"
-                
-                seasons.append({
-                    "season_id": season_id,
-                    "liga_id": liga,
-                    "year": year,
-                    "label": label,
-                    "total_partidos": r["total_partidos"],
-                    "fecha_inicio": r.get("fecha_min"),
-                    "fecha_fin": r.get("fecha_max"),
-                    "estado": "inferida"
-                })
-        
-        return {
-            "total": len(seasons),
-            "seasons": seasons
-        }
     
     except Exception as e:
         logging.error(f"Error listando temporadas: {str(e)}")
