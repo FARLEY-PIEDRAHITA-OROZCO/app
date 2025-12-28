@@ -82,7 +82,8 @@ const TeamStats = () => {
       const response = await axios.get(
         `${API}/prediction/team/${encodeURIComponent(selectedTeam)}?season_id=${seasonId}`
       );
-      setTeamStats(response.data.equipo);
+      // El API devuelve directamente {nombre, liga_id, tiempo_completo, ...}
+      setTeamStats(response.data);
     } catch (err) {
       console.error('Error fetching team stats:', err);
       setError('Error cargando estadísticas. Asegúrate de haber construido las estadísticas primero.');
