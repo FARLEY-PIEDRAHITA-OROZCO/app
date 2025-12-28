@@ -27,7 +27,7 @@ class APIFootballClient:
         self.base_url = API_FOOTBALL_BASE_URL
         self.headers = {
             'x-rapidapi-key': self.api_key,
-            'x-rapidapi-host': 'v3.football.api-sports.io'
+            'x-rapidapi-host': 'api-football-v1.p.rapidapi.com'
         }
         
         if not self.api_key:
