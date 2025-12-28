@@ -9,7 +9,8 @@ load_dotenv(ROOT_DIR / '.env')
 
 # Configuración de la API
 API_FOOTBALL_KEY = os.getenv('API_FOOTBALL_KEY', '')
-API_FOOTBALL_BASE_URL = 'https://v3.football.api-sports.io'
+# RapidAPI URL (para keys de RapidAPI)
+API_FOOTBALL_BASE_URL = 'https://api-football-v1.p.rapidapi.com/v3'
 
 # Configuración de MongoDB
 MONGO_URL = os.getenv('MONGO_URL', 'mongodb://localhost:27017')
