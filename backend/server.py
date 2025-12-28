@@ -801,6 +801,41 @@ async def get_prediction_config():
     }
 
 
+@api_router.get("/prediction/backtesting")
+async def run_backtesting(
+    season_id: Optional[str] = None,
+    liga_id: Optional[str] = None,
+    limite: Optional[int] = 100
+):
+    """
+    Ejecuta backtesting del sistema de pronósticos.
+    
+    Compara pronósticos contra resultados históricos reales.
+    
+    **Parámetros:**
+    - `season_id`: Filtrar por temporada (opcional)
+    - `liga_id`: Filtrar por liga (opcional)
+    - `limite`: Máximo de partidos a evaluar (default: 100)
+    
+    **Retorna:**
+    - Porcentaje de aciertos por tipo de apuesta
+    - ROI simulado
+    """
+    try:
+        resultados = await backtesting_engine.ejecutar_backtesting(
+            season_id=season_id,
+            liga_id=liga_id,
+            limite=limite
+        )
+        return {
+            "success": True,
+            "backtesting": resultados
+        }
+    except Exception as e:
+        logging.error(f"Error en backtesting: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.get("/prediction/teams")
 async def list_teams(
     liga_id: Optional[str] = None,
