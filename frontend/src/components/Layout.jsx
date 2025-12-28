@@ -50,6 +50,11 @@ const Layout = () => {
             Pronósticos
           </div>
           
+          <NavLink to="/mejores-apuestas" data-testid="nav-mejores" style={navLinkStyle}>
+            <Zap size={20} />
+            <span>Mejores Apuestas</span>
+          </NavLink>
+          
           <NavLink to="/jornada" data-testid="nav-jornada" style={navLinkStyle}>
             <Calendar size={20} />
             <span>Por Jornada</span>
