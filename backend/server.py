@@ -220,13 +220,13 @@ async def get_leagues():
         raise HTTPException(status_code=500, detail=str(e))
 
 async def run_scraping_task(request: ScrapeRequest):
-    """Ejecutar scraping en background."""
+    """Ejecutar scraping en background y construir estadísticas automáticamente."""
     global scraping_status
     
     try:
         scraping_status["is_running"] = True
         scraping_status["progress"] = 10
-        scraping_status["message"] = "Iniciando proceso..."
+        scraping_status["message"] = "Iniciando extracción de datos..."
         scraping_status["logs"].append(f"{datetime.now()}: Proceso iniciado")
         
         # Construir comando
@@ -235,13 +235,15 @@ async def run_scraping_task(request: ScrapeRequest):
         if request.limit:
             cmd.extend(["--limit", str(request.limit)])
         
+        league_id = None
         if request.league_ids and len(request.league_ids) > 0:
-            cmd.extend(["--league-id", str(request.league_ids[0])])
+            league_id = request.league_ids[0]
+            cmd.extend(["--league-id", str(league_id)])
         
-        scraping_status["progress"] = 30
-        scraping_status["message"] = "Ejecutando scraping..."
+        scraping_status["progress"] = 20
+        scraping_status["message"] = "Extrayendo partidos de la API..."
         
-        # Ejecutar proceso
+        # Ejecutar proceso de scraping
         result = subprocess.run(
             cmd,
             cwd=ROOT_DIR,
@@ -250,16 +252,40 @@ async def run_scraping_task(request: ScrapeRequest):
             timeout=600
         )
         
-        scraping_status["progress"] = 90
-        
-        if result.returncode == 0:
-            scraping_status["message"] = "Proceso completado exitosamente"
-            scraping_status["logs"].append(f"{datetime.now()}: Completado exitosamente")
-        else:
-            scraping_status["message"] = f"Error: {result.stderr[:200]}"
+        if result.returncode != 0:
+            scraping_status["progress"] = 100
+            scraping_status["message"] = f"Error en extracción: {result.stderr[:200]}"
             scraping_status["logs"].append(f"{datetime.now()}: Error - {result.stderr[:100]}")
+            return
+        
+        scraping_status["progress"] = 60
+        scraping_status["message"] = "Extracción completada. Construyendo estadísticas..."
+        scraping_status["logs"].append(f"{datetime.now()}: Extracción completada")
+        
+        # Construir season_id para las estadísticas
+        if league_id:
+            # Mapear league_id de API a liga_id interno
+            liga_mapping = await _get_liga_id_from_api_id(league_id)
+            if liga_mapping:
+                season_id = f"{liga_mapping}_{request.season}-{(request.season + 1) % 100:02d}"
+                
+                scraping_status["progress"] = 70
+                scraping_status["message"] = f"Construyendo estadísticas para {season_id}..."
+                scraping_status["logs"].append(f"{datetime.now()}: Construyendo estadísticas para {season_id}")
+                
+                try:
+                    equipos = await stats_builder.construir_estadisticas(
+                        liga_id=liga_mapping,
+                        temporada=request.season,
+                        season_id=season_id
+                    )
+                    scraping_status["logs"].append(f"{datetime.now()}: Estadísticas construidas para {len(equipos)} equipos")
+                except Exception as e:
+                    scraping_status["logs"].append(f"{datetime.now()}: Advertencia construyendo stats: {str(e)[:100]}")
         
         scraping_status["progress"] = 100
+        scraping_status["message"] = "✅ Proceso completado: datos extraídos y estadísticas construidas"
+        scraping_status["logs"].append(f"{datetime.now()}: Proceso completado exitosamente")
         
     except subprocess.TimeoutExpired:
         scraping_status["message"] = "Timeout: Proceso tomó demasiado tiempo"
@@ -269,6 +295,32 @@ async def run_scraping_task(request: ScrapeRequest):
         scraping_status["logs"].append(f"{datetime.now()}: Error - {str(e)}")
     finally:
         scraping_status["is_running"] = False
+
+
+async def _get_liga_id_from_api_id(api_league_id: int) -> str:
+    """Obtiene el liga_id interno a partir del ID de la API."""
+    # Buscar en los partidos existentes
+    match = await db.football_matches.find_one(
+        {"id_liga": api_league_id},
+        {"liga_id": 1}
+    )
+    if match:
+        return match.get("liga_id")
+    
+    # Mapeo manual de ligas comunes
+    liga_map = {
+        140: "SPAIN_LA_LIGA",
+        39: "ENGLAND_PREMIER_LEAGUE",
+        135: "ITALY_SERIE_A",
+        78: "GERMANY_BUNDESLIGA",
+        61: "FRANCE_LIGUE_1",
+        262: "MEXICO_LIGA_MX",
+        94: "PORTUGAL_PRIMEIRA_LIGA",
+        88: "NETHERLANDS_EREDIVISIE",
+        144: "BELGIUM_JUPILER_PRO_LEAGUE",
+        203: "TURKEY_SUPER_LIG",
+    }
+    return liga_map.get(api_league_id)
 
 @api_router.post("/scrape/start")
 async def start_scraping(request: ScrapeRequest, background_tasks: BackgroundTasks):
