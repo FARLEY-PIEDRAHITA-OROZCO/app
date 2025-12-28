@@ -812,6 +812,158 @@ async def get_jornada_predictions(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/prediction/mejores-apuestas")
+async def get_mejores_apuestas(
+    season_id: str,
+    jornada: Optional[str] = None,
+    min_confianza: float = 60.0,
+    limite: int = 20
+):
+    """
+    Obtiene las mejores apuestas ordenadas por confianza.
+    
+    **Parámetros:**
+    - `season_id`: ID de temporada (requerido)
+    - `jornada`: Filtrar por jornada específica (opcional, si no se especifica analiza todas)
+    - `min_confianza`: Confianza mínima para incluir (default: 60%)
+    - `limite`: Máximo de apuestas a retornar por categoría (default: 20)
+    
+    **Retorna:**
+    - Mejores apuestas separadas por mercado
+    """
+    try:
+        parts = season_id.rsplit('_', 1)
+        if len(parts) != 2:
+            raise HTTPException(status_code=400, detail="season_id inválido")
+        
+        liga_id = parts[0]
+        
+        # Query de partidos
+        query = {"season_id": season_id}
+        if jornada:
+            query["ronda"] = jornada
+        
+        partidos = await db.football_matches.find(query, {"_id": 0}).to_list(500)
+        
+        if not partidos:
+            return {"success": True, "mensaje": "No hay partidos para analizar", "apuestas": {}}
+        
+        # Generar pronósticos para todos los partidos
+        todas_apuestas = {
+            "doble_oportunidad": [],
+            "over_25": [],
+            "over_15": [],
+            "ambos_marcan": [],
+            "favorito_claro": []
+        }
+        
+        for partido in partidos:
+            try:
+                pronostico = await prediction_engine.generar_pronostico(
+                    equipo_local=partido["equipo_local"],
+                    equipo_visitante=partido["equipo_visitante"],
+                    liga_id=liga_id,
+                    season_id=season_id
+                )
+                
+                tc = pronostico.tiempo_completo
+                confianza = tc.confianza or 0
+                
+                if confianza < min_confianza:
+                    continue
+                
+                base_info = {
+                    "equipo_local": partido["equipo_local"],
+                    "equipo_visitante": partido["equipo_visitante"],
+                    "jornada": partido.get("ronda", ""),
+                    "fecha": partido.get("fecha"),
+                    "confianza": round(confianza, 1),
+                    "resultado_real": f"{partido.get('goles_local_TR', '-')}-{partido.get('goles_visitante_TR', '-')}" if partido.get("estado_del_partido") == "Match Finished" else None
+                }
+                
+                # Doble oportunidad
+                if tc.doble_oportunidad:
+                    todas_apuestas["doble_oportunidad"].append({
+                        **base_info,
+                        "apuesta": tc.doble_oportunidad,
+                        "probabilidad": max(
+                            tc.probabilidades.porcentaje_local + tc.probabilidades.porcentaje_empate if tc.doble_oportunidad == "1X" else 0,
+                            tc.probabilidades.porcentaje_empate + tc.probabilidades.porcentaje_visita if tc.doble_oportunidad == "X2" else 0,
+                            tc.probabilidades.porcentaje_local + tc.probabilidades.porcentaje_visita if tc.doble_oportunidad == "12" else 0
+                        )
+                    })
+                
+                # Over 2.5
+                over_25 = tc.over_under.get("over_25", {}) if tc.over_under else {}
+                if over_25.get("prediccion") == "OVER":
+                    todas_apuestas["over_25"].append({
+                        **base_info,
+                        "apuesta": "OVER 2.5",
+                        "probabilidad": over_25.get("probabilidad", 0),
+                        "goles_esperados": tc.goles_esperados
+                    })
+                
+                # Over 1.5
+                over_15 = tc.over_under.get("over_15", {}) if tc.over_under else {}
+                if over_15.get("prediccion") == "OVER" and over_15.get("probabilidad", 0) >= 70:
+                    todas_apuestas["over_15"].append({
+                        **base_info,
+                        "apuesta": "OVER 1.5",
+                        "probabilidad": over_15.get("probabilidad", 0),
+                        "goles_esperados": tc.goles_esperados
+                    })
+                
+                # Ambos marcan
+                if tc.ambos_marcan == "SI":
+                    todas_apuestas["ambos_marcan"].append({
+                        **base_info,
+                        "apuesta": "AMBOS MARCAN - SÍ",
+                        "probabilidad": confianza
+                    })
+                
+                # Favorito claro (probabilidad > 60%)
+                prob_max = max(tc.probabilidades.porcentaje_local, tc.probabilidades.porcentaje_visita)
+                if prob_max >= 55:
+                    favorito = partido["equipo_local"] if tc.probabilidades.porcentaje_local > tc.probabilidades.porcentaje_visita else partido["equipo_visitante"]
+                    todas_apuestas["favorito_claro"].append({
+                        **base_info,
+                        "apuesta": f"GANA {favorito}",
+                        "probabilidad": prob_max,
+                        "pronostico": tc.pronostico
+                    })
+                    
+            except Exception as e:
+                logging.warning(f"Error procesando {partido['equipo_local']} vs {partido['equipo_visitante']}: {e}")
+                continue
+        
+        # Ordenar por confianza/probabilidad y limitar
+        for mercado in todas_apuestas:
+            todas_apuestas[mercado] = sorted(
+                todas_apuestas[mercado],
+                key=lambda x: x.get("probabilidad", x.get("confianza", 0)),
+                reverse=True
+            )[:limite]
+        
+        # Contar totales
+        total_apuestas = sum(len(v) for v in todas_apuestas.values())
+        
+        return {
+            "success": True,
+            "season_id": season_id,
+            "jornada": jornada or "Todas",
+            "min_confianza": min_confianza,
+            "total_partidos_analizados": len(partidos),
+            "total_apuestas_encontradas": total_apuestas,
+            "apuestas": todas_apuestas
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error obteniendo mejores apuestas: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.get("/prediction/team/{nombre}")
 async def get_team_stats(
     nombre: str,
