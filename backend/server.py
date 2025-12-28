@@ -29,6 +29,7 @@ from prediction_engine import (
     ClassificationEngine,
     PredictionEngine,
     ValidationEngine,
+    BacktestingEngine,
     TipoTiempo,
     Config as PredictionConfig
 )
@@ -46,6 +47,7 @@ stats_builder = StatsBuilder(db)
 classification_engine = ClassificationEngine(db)
 prediction_engine = PredictionEngine(db)
 validation_engine = ValidationEngine(db)
+backtesting_engine = BacktestingEngine(db)
 
 # Global variable to track scraping status
 scraping_status = {
