@@ -689,6 +689,129 @@ async def generate_prediction(request: PronosticoRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/prediction/jornada")
+async def get_jornada_predictions(
+    season_id: str,
+    jornada: Optional[str] = None
+):
+    """
+    Genera pronósticos para todos los partidos de una jornada.
+    
+    **Parámetros:**
+    - `season_id`: ID de temporada (requerido)
+    - `jornada`: Nombre de la jornada (ej: "Regular Season - 1"). Si no se especifica, lista jornadas disponibles.
+    
+    **Retorna:**
+    - Lista de partidos con pronósticos completos
+    """
+    try:
+        # Extraer liga_id del season_id
+        parts = season_id.rsplit('_', 1)
+        if len(parts) != 2:
+            raise HTTPException(status_code=400, detail="season_id inválido")
+        
+        liga_id = parts[0]
+        
+        # Si no se especifica jornada, devolver lista de jornadas disponibles
+        if not jornada:
+            pipeline = [
+                {"$match": {"season_id": season_id}},
+                {"$group": {
+                    "_id": "$ronda",
+                    "partidos": {"$sum": 1},
+                    "fecha_min": {"$min": "$fecha"}
+                }},
+                {"$sort": {"fecha_min": 1}}
+            ]
+            jornadas = await db.football_matches.aggregate(pipeline).to_list(100)
+            return {
+                "season_id": season_id,
+                "jornadas": [{"nombre": j["_id"], "partidos": j["partidos"]} for j in jornadas]
+            }
+        
+        # Obtener partidos de la jornada
+        partidos = await db.football_matches.find(
+            {"season_id": season_id, "ronda": jornada},
+            {"_id": 0}
+        ).sort("fecha", 1).to_list(20)
+        
+        if not partidos:
+            raise HTTPException(status_code=404, detail=f"No se encontraron partidos para la jornada '{jornada}'")
+        
+        # Generar pronósticos para cada partido
+        resultados = []
+        for partido in partidos:
+            try:
+                pronostico = await prediction_engine.generar_pronostico(
+                    equipo_local=partido["equipo_local"],
+                    equipo_visitante=partido["equipo_visitante"],
+                    liga_id=liga_id,
+                    season_id=season_id
+                )
+                
+                tc = pronostico.tiempo_completo
+                
+                # Obtener stats defensivas
+                stats_local = await stats_builder.obtener_stats_equipo(
+                    partido["equipo_local"], liga_id, season_id=season_id
+                )
+                stats_visita = await stats_builder.obtener_stats_equipo(
+                    partido["equipo_visitante"], liga_id, season_id=season_id
+                )
+                
+                resultados.append({
+                    "equipo_local": partido["equipo_local"],
+                    "equipo_visitante": partido["equipo_visitante"],
+                    "fecha": partido.get("fecha"),
+                    "resultado_real": {
+                        "local": partido.get("goles_local_TR"),
+                        "visitante": partido.get("goles_visitante_TR")
+                    } if partido.get("estado_del_partido") == "Match Finished" else None,
+                    "pronostico": tc.pronostico,
+                    "doble_oportunidad": tc.doble_oportunidad,
+                    "ambos_marcan": tc.ambos_marcan,
+                    "over_under": tc.over_under,
+                    "probabilidades": {
+                        "local": tc.probabilidades.porcentaje_local,
+                        "empate": tc.probabilidades.porcentaje_empate,
+                        "visita": tc.probabilidades.porcentaje_visita
+                    },
+                    "confianza": tc.confianza,
+                    "goles_esperados": tc.goles_esperados,
+                    "defensa_local": {
+                        "gc_total": stats_local.stats_completo.goles_contra if stats_local else 0,
+                        "promedio_gc": stats_local.stats_completo.promedio_gc if stats_local else 0
+                    },
+                    "defensa_visitante": {
+                        "gc_total": stats_visita.stats_completo.goles_contra if stats_visita else 0,
+                        "promedio_gc": stats_visita.stats_completo.promedio_gc if stats_visita else 0
+                    },
+                    "forma_reciente": pronostico.forma_reciente
+                })
+            except Exception as e:
+                logging.warning(f"Error generando pronóstico para {partido['equipo_local']} vs {partido['equipo_visitante']}: {e}")
+                resultados.append({
+                    "equipo_local": partido["equipo_local"],
+                    "equipo_visitante": partido["equipo_visitante"],
+                    "fecha": partido.get("fecha"),
+                    "error": str(e)
+                })
+        
+        return {
+            "success": True,
+            "season_id": season_id,
+            "jornada": jornada,
+            "total_partidos": len(resultados),
+            "partidos": resultados
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error generando pronósticos de jornada: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.get("/prediction/team/{nombre}")
 async def get_team_stats(
     nombre: str,
