@@ -5,6 +5,7 @@ import Matches from './pages/Matches';
 import Scraping from './pages/Scraping';
 import Predictions from './pages/Predictions';
 import JornadaPredictions from './pages/JornadaPredictions';
+import MejoresApuestas from './pages/MejoresApuestas';
 import Classification from './pages/Classification';
 import TeamStats from './pages/TeamStats';
 import Layout from './components/Layout';
@@ -18,6 +19,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="predictions" element={<Predictions />} />
             <Route path="jornada" element={<JornadaPredictions />} />
+            <Route path="mejores-apuestas" element={<MejoresApuestas />} />
             <Route path="classification" element={<Classification />} />
             <Route path="teams" element={<TeamStats />} />
             <Route path="matches" element={<Matches />} />
