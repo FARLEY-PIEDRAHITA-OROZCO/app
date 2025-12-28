@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { BarChart3, Database, Download, Target, Trophy, Users } from 'lucide-react';
+import { BarChart3, Database, Download, Target, Trophy, Users, Calendar } from 'lucide-react';
 
 const Layout = () => {
   const navLinkStyle = ({ isActive }) => ({
@@ -50,9 +50,14 @@ const Layout = () => {
             Pronósticos
           </div>
           
+          <NavLink to="/jornada" data-testid="nav-jornada" style={navLinkStyle}>
+            <Calendar size={20} />
+            <span>Por Jornada</span>
+          </NavLink>
+          
           <NavLink to="/predictions" data-testid="nav-predictions" style={navLinkStyle}>
             <Target size={20} />
-            <span>Generar Pronóstico</span>
+            <span>Por Partido</span>
           </NavLink>
           
           <NavLink to="/classification" data-testid="nav-classification" style={navLinkStyle}>
