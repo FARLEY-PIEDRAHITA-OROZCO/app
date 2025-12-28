@@ -201,14 +201,14 @@ const TeamStats = () => {
           title="Como Visitante" 
           icon={<Plane size={18} color="#f59e0b" />}
           stats={{
-            partidos_jugados: stats?.pj_visitante,
-            victorias: stats?.v_visitante,
-            empates: stats?.e_visitante,
-            derrotas: stats?.d_visitante,
-            goles_favor: stats?.gf_visitante,
-            goles_contra: stats?.gc_visitante,
-            puntos: stats?.pts_visitante,
-            rendimiento_general: stats?.rendimiento_visitante
+            partidos_jugados: stats?.pj_visita,
+            victorias: stats?.v_visita,
+            empates: stats?.e_visita,
+            derrotas: stats?.d_visita,
+            goles_favor: stats?.gf_visita,
+            goles_contra: stats?.gc_visita,
+            puntos: stats?.pts_visita,
+            rendimiento_general: stats?.rendimiento_visita
           }}
           color="#f59e0b"
         />
