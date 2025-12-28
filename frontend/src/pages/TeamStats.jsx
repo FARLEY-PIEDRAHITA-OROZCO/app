@@ -99,26 +99,49 @@ const TeamStats = () => {
         {icon}
         <h4 style={{ fontSize: '1rem', fontWeight: '600' }}>{title}</h4>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
         <div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>PJ</p>
           <p style={{ fontSize: '1.25rem', fontWeight: '700' }}>{stats?.partidos_jugados || stats?.pj || 0}</p>
         </div>
         <div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>V-E-D</p>
-          <p style={{ fontSize: '1rem', fontWeight: '600' }}>
+          <p style={{ fontSize: '0.9rem', fontWeight: '600' }}>
             <span style={{ color: '#10b981' }}>{stats?.victorias || stats?.v || 0}</span>
             -<span style={{ color: '#f59e0b' }}>{stats?.empates || stats?.e || 0}</span>
             -<span style={{ color: '#ef4444' }}>{stats?.derrotas || stats?.d || 0}</span>
           </p>
         </div>
         <div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>GF-GC</p>
-          <p style={{ fontSize: '1rem', fontWeight: '600' }}>
-            {stats?.goles_favor || stats?.gf || 0}-{stats?.goles_contra || stats?.gc || 0}
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Ataque (GF)</p>
+          <p style={{ fontSize: '1.1rem', fontWeight: '600', color: '#10b981' }}>
+            {stats?.goles_favor || stats?.gf || 0}
+          </p>
+        </div>
+        <div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Defensa (GC)</p>
+          <p style={{ fontSize: '1.1rem', fontWeight: '600', color: '#ef4444' }}>
+            {stats?.goles_contra || stats?.gc || 0}
           </p>
         </div>
       </div>
+      
+      {/* Promedios ofensivo/defensivo */}
+      <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+        <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '0.5rem', borderRadius: '6px', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Prom. Goles Favor</p>
+          <p style={{ fontSize: '1rem', fontWeight: '700', color: '#10b981' }}>
+            {stats?.promedio_gf ? stats.promedio_gf.toFixed(2) : ((stats?.goles_favor || stats?.gf || 0) / (stats?.partidos_jugados || stats?.pj || 1)).toFixed(2)}
+          </p>
+        </div>
+        <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: '6px', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Prom. Goles Contra</p>
+          <p style={{ fontSize: '1rem', fontWeight: '700', color: '#ef4444' }}>
+            {stats?.promedio_gc ? stats.promedio_gc.toFixed(2) : ((stats?.goles_contra || stats?.gc || 0) / (stats?.partidos_jugados || stats?.pj || 1)).toFixed(2)}
+          </p>
+        </div>
+      </div>
+
       <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Puntos</span>
