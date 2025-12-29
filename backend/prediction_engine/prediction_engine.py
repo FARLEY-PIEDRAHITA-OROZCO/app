@@ -758,6 +758,66 @@ class PredictionEngine:
             porcentaje_visita=round(p_visita_ajustado, 2)
         )
     
+    def _ajustar_por_historico(
+        self,
+        probabilidades: Probabilidades,
+        factores_historicos: Dict[str, Any]
+    ) -> Probabilidades:
+        """
+        Ajusta las probabilidades basándose en histórico y H2H.
+        
+        Parámetros:
+        -----------
+        probabilidades : Probabilidades
+            Probabilidades base calculadas
+        factores_historicos : dict
+            Factores de ajuste histórico incluyendo H2H
+        
+        Retorna:
+        --------
+        Probabilidades
+            Probabilidades ajustadas por histórico
+        """
+        p_local = probabilidades.porcentaje_local
+        p_empate = probabilidades.porcentaje_empate
+        p_visita = probabilidades.porcentaje_visita
+        
+        # Factor H2H (enfrentamientos directos)
+        h2h = factores_historicos.get("h2h", {})
+        if h2h.get("tiene_historial") and h2h.get("total_partidos", 0) >= 3:
+            # Ajustar según historial de enfrentamientos
+            pct_eq1 = h2h.get("porcentaje_eq1", 33)  # Local
+            pct_eq2 = h2h.get("porcentaje_eq2", 33)  # Visitante
+            pct_e = h2h.get("porcentaje_empate", 33)
+            
+            # Peso del H2H (20% de influencia)
+            peso_h2h = 0.20
+            
+            # Mezclar probabilidades actuales con H2H
+            p_local = p_local * (1 - peso_h2h) + pct_eq1 * peso_h2h
+            p_visita = p_visita * (1 - peso_h2h) + pct_eq2 * peso_h2h
+            p_empate = p_empate * (1 - peso_h2h) + pct_e * peso_h2h
+        
+        # Factor de temporadas históricas
+        factor_local = factores_historicos.get("factor_local", 1.0)
+        factor_visita = factores_historicos.get("factor_visita", 1.0)
+        
+        # Aplicar factores (ajuste suave)
+        p_local *= factor_local
+        p_visita *= factor_visita
+        
+        # Normalizar para que sumen 100
+        total = p_local + p_empate + p_visita
+        p_local = p_local / total * 100
+        p_empate = p_empate / total * 100
+        p_visita = p_visita / total * 100
+        
+        return Probabilidades(
+            porcentaje_local=round(p_local, 2),
+            porcentaje_empate=round(p_empate, 2),
+            porcentaje_visita=round(p_visita, 2)
+        )
+    
     def _calcular_over_under(
         self,
         stats_local: EstadisticasEquipo,
