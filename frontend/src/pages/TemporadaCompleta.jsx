@@ -63,51 +63,24 @@ const TemporadaCompleta = () => {
     setPartidos([]);
     
     try {
-      // Obtener todas las jornadas
-      const jornadasRes = await axios.get(`${API}/api/prediction/jornada?season_id=${seasonId}`);
-      const jornadas = jornadasRes.data.jornadas || [];
+      setProgress(10);
       
-      if (jornadas.length === 0) {
-        setError('No se encontraron jornadas para esta temporada');
-        setLoading(false);
-        return;
+      // Usar endpoint optimizado que carga toda la temporada de una vez
+      const response = await axios.get(`${API}/api/prediction/temporada-completa?season_id=${seasonId}`);
+      
+      setProgress(90);
+      
+      if (response.data.partidos) {
+        setPartidos(response.data.partidos);
       }
       
-      let todosPartidos = [];
-      
-      // Procesar cada jornada
-      for (let i = 0; i < jornadas.length; i++) {
-        const jornada = jornadas[i];
-        setProgress(Math.round(((i + 1) / jornadas.length) * 100));
-        
-        try {
-          const res = await axios.get(
-            `${API}/api/prediction/jornada?season_id=${seasonId}&jornada=${encodeURIComponent(jornada.nombre)}`
-          );
-          
-          if (res.data.partidos) {
-            // Agregar número de jornada para ordenamiento
-            const jornadaNum = parseInt(jornada.nombre.match(/\d+/)?.[0] || i + 1);
-            const partidosConJornada = res.data.partidos.map(p => ({
-              ...p,
-              jornada: jornada.nombre,
-              jornada_num: jornadaNum
-            }));
-            todosPartidos = [...todosPartidos, ...partidosConJornada];
-          }
-        } catch (err) {
-          console.warn(`Error en jornada ${jornada.nombre}:`, err);
-        }
-      }
-      
-      setPartidos(todosPartidos);
+      setProgress(100);
       
     } catch (err) {
       console.error('Error:', err);
       setError('Error cargando datos de la temporada');
     } finally {
       setLoading(false);
-      setProgress(100);
     }
   };
 
