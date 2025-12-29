@@ -476,6 +476,8 @@ class Pronostico(BaseModelConfig):
                 'goles_esperados': self.segundo_tiempo.goles_esperados
             },
             'forma_reciente': self.forma_reciente,
+            'h2h': self.h2h,
+            'temporadas_analizadas': self.temporadas_analizadas,
             'version_algoritmo': self.version_algoritmo,
             'fecha_generacion': self.fecha_generacion.isoformat()
         }
