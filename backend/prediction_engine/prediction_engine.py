@@ -182,13 +182,26 @@ class PredictionEngine:
             equipo_visitante, liga_id, season_id, temporada
         )
         
+        # Obtener factores históricos (H2H + múltiples temporadas)
+        factores_historicos = None
+        if self.usar_historico:
+            try:
+                factores_historicos = await self.historico.calcular_factor_historico(
+                    equipo_local, equipo_visitante, liga_id, season_id
+                )
+                logger.debug(f"Factores históricos obtenidos: {factores_historicos.get('temporadas_analizadas', 0)} temporadas, H2H: {factores_historicos.get('h2h', {}).get('tiene_historial', False)}")
+            except Exception as e:
+                logger.warning(f"Error obteniendo factores históricos: {e}")
+                factores_historicos = None
+        
         # Generar pronóstico para cada tiempo
         pronostico_tc = self._generar_pronostico_tiempo(
             stats_local.stats_completo,
             stats_visitante.stats_completo,
             TipoTiempo.COMPLETO,
             forma_local,
-            forma_visitante
+            forma_visitante,
+            factores_historicos
         )
         
         pronostico_1mt = self._generar_pronostico_tiempo(
@@ -196,7 +209,8 @@ class PredictionEngine:
             stats_visitante.stats_primer_tiempo,
             TipoTiempo.PRIMER_TIEMPO,
             forma_local,
-            forma_visitante
+            forma_visitante,
+            factores_historicos
         )
         
         pronostico_2mt = self._generar_pronostico_tiempo(
@@ -204,10 +218,13 @@ class PredictionEngine:
             stats_visitante.stats_segundo_tiempo,
             TipoTiempo.SEGUNDO_TIEMPO,
             forma_local,
-            forma_visitante
+            forma_visitante,
+            factores_historicos
         )
         
         # Crear pronóstico completo
+        h2h_info = factores_historicos.get("h2h") if factores_historicos else None
+        
         pronostico = Pronostico(
             partido_id=partido_id,
             equipo_local=equipo_local,
@@ -221,6 +238,8 @@ class PredictionEngine:
                 "local": forma_local,
                 "visitante": forma_visitante
             },
+            h2h=h2h_info,
+            temporadas_analizadas=factores_historicos.get("temporadas_analizadas", 1) if factores_historicos else 1,
             version_algoritmo=Config.VERSION
         )
         
