@@ -18,7 +18,7 @@ import sys
 from datetime import datetime
 
 # Backend URL from environment
-BACKEND_URL = "https://predictify-24.preview.emergentagent.com/api"
+BACKEND_URL = "https://sportbet-genius.preview.emergentagent.com/api"
 
 class ReviewRequestTest:
     def __init__(self):
