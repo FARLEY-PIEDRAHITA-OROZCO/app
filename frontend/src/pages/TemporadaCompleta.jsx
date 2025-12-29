@@ -170,8 +170,10 @@ const TemporadaCompleta = () => {
     let aciertosDO = 0;
     
     jugados.forEach(p => {
-      const [gLocal, gVisita] = (p.resultado_real || '').split('-').map(Number);
-      if (isNaN(gLocal) || isNaN(gVisita)) return;
+      // Manejar resultado_real como objeto {local, visitante}
+      const gLocal = p.resultado_real?.local;
+      const gVisita = p.resultado_real?.visitante;
+      if (gLocal === null || gLocal === undefined || gVisita === null || gVisita === undefined) return;
       
       let resultadoReal = gLocal > gVisita ? 'L' : gLocal < gVisita ? 'V' : 'E';
       if (p.pronostico === resultadoReal) aciertos++;
