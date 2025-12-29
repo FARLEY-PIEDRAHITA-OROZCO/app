@@ -418,6 +418,18 @@ class Pronostico(BaseModelConfig):
         description="Forma reciente de los equipos"
     )
     
+    # Histórico H2H (enfrentamientos directos)
+    h2h: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Historial de enfrentamientos directos"
+    )
+    
+    # Temporadas analizadas
+    temporadas_analizadas: int = Field(
+        default=1,
+        description="Número de temporadas usadas para el análisis"
+    )
+    
     # Metadata
     version_algoritmo: str = Field(default=Config.VERSION, description="Versión")
     fecha_generacion: datetime = Field(
