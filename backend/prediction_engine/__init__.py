@@ -74,6 +74,7 @@ from .classification import ClassificationEngine
 from .prediction_engine import PredictionEngine
 from .validation import ValidationEngine
 from .backtesting import BacktestingEngine
+from .historico_consolidado import HistoricoConsolidado
 
 __all__ = [
     # Modelos
