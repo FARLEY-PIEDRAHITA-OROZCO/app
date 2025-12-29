@@ -105,4 +105,5 @@ __all__ = [
     'PredictionEngine',
     'ValidationEngine',
     'BacktestingEngine',
+    'HistoricoConsolidado',
 ]
