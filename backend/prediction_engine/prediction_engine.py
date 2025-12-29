@@ -257,7 +257,8 @@ class PredictionEngine:
         stats_visitante: EstadisticasEquipo,
         tipo_tiempo: TipoTiempo,
         forma_local: Dict[str, Any] = None,
-        forma_visitante: Dict[str, Any] = None
+        forma_visitante: Dict[str, Any] = None,
+        factores_historicos: Dict[str, Any] = None
     ) -> PronosticoTiempo:
         """
         Genera pronóstico para un tiempo específico.
@@ -266,11 +267,12 @@ class PredictionEngine:
         1. Calcular probabilidades
         2. Calcular factores de ajuste
         3. Aplicar ajuste por forma reciente
-        4. Aplicar algoritmo de decisión
-        5. Generar doble oportunidad
-        6. Calcular ambos marcan
-        7. Calcular Over/Under goles
-        8. Calcular confianza
+        4. Aplicar ajuste por histórico (H2H + múltiples temporadas)
+        5. Aplicar algoritmo de decisión
+        6. Generar doble oportunidad
+        7. Calcular ambos marcan
+        8. Calcular Over/Under goles
+        9. Calcular confianza
         
         Parámetros:
         -----------
@@ -284,6 +286,8 @@ class PredictionEngine:
             Forma reciente del equipo local
         forma_visitante : dict, optional
             Forma reciente del equipo visitante
+        factores_historicos : dict, optional
+            Factores de ajuste basados en histórico y H2H
         
         Retorna:
         --------
@@ -305,27 +309,36 @@ class PredictionEngine:
                 probabilidades, forma_local, forma_visitante
             )
         
-        # PASO 4: Aplicar algoritmo de decisión
+        # PASO 4: Ajustar por histórico (H2H + múltiples temporadas)
+        if factores_historicos:
+            probabilidades = self._ajustar_por_historico(
+                probabilidades, factores_historicos
+            )
+            # Ajustar factores locales también
+            factor_local *= factores_historicos.get("factor_local", 1.0)
+            factor_visita *= factores_historicos.get("factor_visita", 1.0)
+        
+        # PASO 5: Aplicar algoritmo de decisión
         pronostico = self._aplicar_algoritmo_decision(
             probabilidades, factor_local, factor_visita
         )
         
-        # PASO 5: Generar doble oportunidad
+        # PASO 6: Generar doble oportunidad
         doble_oportunidad = self._generar_doble_oportunidad(
             pronostico, probabilidades
         )
         
-        # PASO 6: Calcular ambos marcan
+        # PASO 7: Calcular ambos marcan
         ambos_marcan = self._calcular_ambos_marcan(
             stats_local, stats_visitante
         )
         
-        # PASO 7: Calcular Over/Under y goles esperados
+        # PASO 8: Calcular Over/Under y goles esperados
         over_under, goles_esperados = self._calcular_over_under(
             stats_local, stats_visitante, forma_local, forma_visitante, tipo_tiempo
         )
         
-        # PASO 8: Calcular confianza
+        # PASO 9: Calcular confianza (ahora incluye bonus por histórico)
         confianza = self._calcular_confianza(
             probabilidades, pronostico, factor_local, factor_visita
         )
