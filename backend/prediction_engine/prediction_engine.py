@@ -92,7 +92,7 @@ class PredictionEngine:
     ```
     """
     
-    def __init__(self, db):
+    def __init__(self, db, usar_historico: bool = True):
         """
         Inicializa el motor de pronósticos.
         
@@ -100,11 +100,19 @@ class PredictionEngine:
         -----------
         db : AsyncIOMotorDatabase
             Conexión a MongoDB
+        usar_historico : bool
+            Si True, usa datos históricos de múltiples temporadas (default: True)
         """
         self.db = db
         self.stats_builder = StatsBuilder(db)
         self.umbrales = Umbrales()
-        logger.info(f"PredictionEngine inicializado - v{Config.VERSION}")
+        self.usar_historico = usar_historico
+        
+        # Importar aquí para evitar circular imports
+        from .historico_consolidado import HistoricoConsolidado
+        self.historico = HistoricoConsolidado(db)
+        
+        logger.info(f"PredictionEngine inicializado - v{Config.VERSION} (histórico={'ON' if usar_historico else 'OFF'})")
     
     async def generar_pronostico(
         self,
