@@ -255,8 +255,9 @@ const TemporadaCompleta = () => {
 
   const verificarAcierto = (partido) => {
     if (!partido.resultado_real) return null;
-    const [gL, gV] = partido.resultado_real.split('-').map(Number);
-    if (isNaN(gL) || isNaN(gV)) return null;
+    const gL = partido.resultado_real.local;
+    const gV = partido.resultado_real.visitante;
+    if (gL === null || gL === undefined || gV === null || gV === undefined) return null;
     const resReal = gL > gV ? 'L' : gL < gV ? 'V' : 'E';
     return partido.pronostico === resReal;
   };
