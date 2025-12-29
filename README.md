@@ -1,343 +1,351 @@
-# ⚽ Sistema de Pronósticos Deportivos PLLA 3.0
+# ⚽ Football Prediction System - PLLA 3.0
 
-## 📋 Descripción
+Sistema avanzado de pronósticos deportivos con análisis estadístico, histórico consolidado y machine learning para fútbol.
 
-Sistema completo de análisis y pronósticos de fútbol basado en el modelo Excel PLLA 3.0.
-Convierte la lógica compleja del Excel (526,550+ fórmulas) en una aplicación web moderna.
+## 🎯 Características Principales
 
-**Stack Tecnológico:**
-- **Backend:** Python 3.11 + FastAPI + Motor (MongoDB async)
-- **Frontend:** React 18 + React Router + Axios
-- **Base de Datos:** MongoDB
-- **Data Source:** API-Football
+### Motor de Pronósticos
+- **Pronóstico Principal (L/E/V)** para tiempo completo, primer tiempo y segundo tiempo
+- **Doble Oportunidad** (1X, X2, 12) con ~84% de precisión histórica
+- **Over/Under** goles (1.5, 2.5, 3.5) con probabilidades calculadas
+- **Ambos Marcan** (SI/NO)
+- **Goles Esperados** por equipo y total
+
+### Histórico Consolidado (NUEVO)
+- **H2H (Head to Head)**: Historial de enfrentamientos directos entre equipos
+- **Múltiples Temporadas**: Análisis ponderado de hasta 3 temporadas
+- **Factores de Ajuste**: Probabilidades ajustadas por histórico
+
+### Análisis de Forma
+- **Forma Reciente**: Últimos 5 partidos de cada equipo
+- **Rendimiento Local/Visitante**: Estadísticas separadas
+- **Estadísticas Defensivas**: Goles en contra, promedio GC
+
+### Vistas de Análisis
+- **Temporada Completa**: Vista tipo Excel con 380+ partidos
+- **Mejores Apuestas**: Dashboard con oportunidades ordenadas por confianza
+- **Por Jornada**: Pronósticos de todos los partidos de una jornada
+- **Por Partido**: Análisis detallado de un partido específico
+
+### Validación
+- **Backtesting**: Validación histórica contra resultados reales
+- **Estadísticas de Aciertos**: En tiempo real por tipo de apuesta
 
 ---
 
-## 🆕 Novedades v3.1.0 (Diciembre 2024)
+## 📊 Precisión del Sistema (Backtesting)
 
-### Nuevas Funcionalidades
-- ✅ **Sistema Multi-Liga:** Soporte completo para múltiples ligas (La Liga, Premier League, Serie A, etc.)
-- ✅ **Over/Under Goles:** Predicciones de Over/Under 1.5, 2.5 y 3.5 goles
-- ✅ **Goles Esperados:** Cálculo de goles esperados por equipo usando Poisson
-- ✅ **Forma Reciente:** Análisis de los últimos 5 partidos de cada equipo
-- ✅ **Ajuste por Forma:** Las probabilidades se ajustan según el rendimiento reciente (30%)
-- ✅ **Selector de Liga:** Nuevo componente para cambiar entre ligas
-- ✅ **Exportación de Datos:** Exportar datos para uso local
+| Tipo de Apuesta | La Liga 23-24 | Premier 22-23 |
+|-----------------|---------------|---------------|
+| Pronóstico L/E/V | 55.0% | 60.8% |
+| **Doble Oportunidad** | **84.2%** | **82.6%** |
+| Over 2.5 | 63.4% | 60.5% |
+| Over 1.5 | 78.9% | 75.5% |
+| ROI Simulado | +17.9% | +15.7% |
 
-### Correcciones
-- ✅ El endpoint `/prediction/generate` ahora usa correctamente `season_id`
-- ✅ El endpoint `/prediction/teams` filtra correctamente por liga
-- ✅ El endpoint `/prediction/build-stats` extrae `liga_id` del `season_id`
+> **Recomendación**: El sistema es más preciso para **Doble Oportunidad** y **Over/Under** que para pronóstico directo.
 
 ---
 
-## 🚀 Instalación Local
+## 🏗️ Arquitectura
 
-### Prerrequisitos
-
-- **Python 3.11+** (recomendado, 3.10 mínimo)
-- **Node.js 18+** y **Yarn**
-- **MongoDB** (local o Atlas)
-
-### Paso 1: Clonar el Proyecto
-
-```bash
-git clone <tu-repositorio>
-cd app
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│    Frontend     │────▶│     Backend     │────▶│    MongoDB      │
+│   React + JS    │     │    FastAPI      │     │   Database      │
+│   Port: 3000    │     │   Port: 8001    │     │   Port: 27017   │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                               │
+                               ▼
+                        ┌─────────────────┐
+                        │  API-Football   │
+                        │   (RapidAPI)    │
+                        └─────────────────┘
 ```
 
-### Paso 2: Configurar Backend
-
-```bash
-cd backend
-
-# Crear entorno virtual
-python -m venv venv
-
-# Activar entorno virtual
-# Windows:
-venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-
-# Instalar dependencias
-pip install -r requirements.txt
-```
-
-### Paso 3: Configurar Variables de Entorno (Backend)
-
-Crea o edita el archivo `backend/.env`:
-
-```env
-MONGO_URL=mongodb://localhost:27017
-DB_NAME=test_database
-API_FOOTBALL_KEY=tu_api_key_aqui
-```
-
-### Paso 4: Importar Datos (Opcional pero Recomendado)
-
-Si tienes los archivos de exportación de datos:
-
-```bash
-cd backend
-python import_data.py
-```
-
-Esto importará:
-- La Liga 2023-24 (380 partidos, 20 equipos)
-- Premier League 2022-23 (380 partidos, 20 equipos)
-
-### Paso 5: Configurar Frontend
-
-```bash
-cd frontend
-yarn install
-```
-
-Archivo `frontend/.env`:
-```env
-REACT_APP_BACKEND_URL=http://localhost:8001
-```
-
-### Paso 6: Iniciar la Aplicación
-
-```bash
-# Terminal 1 - Backend
-cd backend
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
-
-# Terminal 2 - Frontend
-cd frontend
-yarn start
-```
-
-La aplicación estará disponible en:
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:8001/api
-- **Documentación API:** http://localhost:8001/docs
+### Stack Tecnológico
+- **Frontend**: React 18, Axios, Lucide Icons
+- **Backend**: Python 3.11, FastAPI, Motor (async MongoDB)
+- **Database**: MongoDB
+- **API Externa**: API-Football (RapidAPI)
 
 ---
 
 ## 📁 Estructura del Proyecto
 
 ```
-app/
-├── README.md                    # Esta documentación
-├── data_export/                 # Datos exportados para uso local
-│   ├── football_matches.json    # Partidos (760)
-│   ├── team_statistics.json     # Estadísticas de equipos (40)
-│   ├── seasons.json             # Temporadas (2)
-│   └── import_data.py           # Script de importación
-├── docs/
-│   ├── MOTOR_PRONOSTICOS.md     # Documentación técnica del algoritmo
-│   ├── ANALISIS_SEASON_ID.md    # Implementación season_id
-│   └── API_REFERENCE.md         # Referencia completa de la API
+/app/
 ├── backend/
-│   ├── server.py                # Servidor FastAPI principal
-│   ├── requirements.txt         # Dependencias Python
-│   ├── .env                     # Variables de entorno
-│   ├── api_football/            # Módulo de extracción de datos
-│   └── prediction_engine/       # Motor de pronósticos PLLA 3.0
-│       ├── config.py            # Umbrales y configuración
-│       ├── models.py            # Modelos Pydantic
-│       ├── stats_builder.py     # Constructor de estadísticas
-│       ├── classification.py    # Motor de clasificación
-│       ├── prediction_engine.py # Motor de pronósticos
-│       └── validation.py        # Validador GANA/PIERDE
-└── frontend/
-    ├── src/
-    │   ├── components/
-    │   │   ├── LeagueSelector.jsx    # 🆕 Selector de ligas
-    │   │   └── SeasonSelector.jsx    # Selector de temporadas
-    │   └── pages/
-    │       ├── Dashboard.jsx         # Vista global/por temporada
-    │       ├── Predictions.jsx       # 🆕 Con Over/Under y forma
-    │       ├── Classification.jsx    # Tabla de posiciones
-    │       ├── TeamStats.jsx         # Estadísticas por equipo
-    │       ├── Matches.jsx           # Listado de partidos
-    │       └── Scraping.jsx          # Extracción de datos
-    └── package.json
+│   ├── api_football/           # Cliente API-Football
+│   │   ├── api_client.py       # Cliente HTTP
+│   │   ├── config.py           # Configuración API
+│   │   ├── db_manager.py       # Gestión de BD
+│   │   └── main.py             # Script de extracción
+│   ├── prediction_engine/      # Motor de pronósticos
+│   │   ├── prediction_engine.py    # Motor principal
+│   │   ├── stats_builder.py        # Constructor de estadísticas
+│   │   ├── classification.py       # Tabla de posiciones
+│   │   ├── historico_consolidado.py # H2H y histórico (NUEVO)
+│   │   ├── backtesting.py          # Validación histórica
+│   │   ├── models.py               # Modelos Pydantic
+│   │   └── config.py               # Configuración
+│   ├── server.py               # API FastAPI
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── Dashboard.jsx           # Panel principal
+│   │   │   ├── TemporadaCompleta.jsx   # Vista Excel (NUEVO)
+│   │   │   ├── MejoresApuestas.jsx     # Dashboard apuestas (NUEVO)
+│   │   │   ├── JornadaPredictions.jsx  # Por jornada (NUEVO)
+│   │   │   ├── Predictions.jsx         # Por partido
+│   │   │   ├── Classification.jsx      # Clasificación
+│   │   │   ├── TeamStats.jsx           # Estadísticas equipo
+│   │   │   ├── Matches.jsx             # Partidos
+│   │   │   └── Scraping.jsx            # Extracción
+│   │   ├── components/
+│   │   │   ├── Layout.jsx
+│   │   │   ├── LeagueSelector.jsx
+│   │   │   └── SeasonSelector.jsx
+│   │   └── App.js
+│   └── package.json
+├── data_export/                # Datos exportados para setup local
+│   ├── football_matches.json
+│   ├── team_statistics.json
+│   ├── seasons.json
+│   └── import_data.py
+├── docs/
+│   ├── API_REFERENCE.md        # Referencia de API
+│   ├── GUIA_INSTALACION_LOCAL.md
+│   ├── MOTOR_PRONOSTICOS.md    # Documentación del algoritmo
+│   └── ANALISIS_SEASON_ID.md
+└── README.md
 ```
 
 ---
 
-## 🎯 Funcionalidades
+## 🚀 Inicio Rápido
 
-### Motor de Pronósticos
+### Requisitos
+- Python 3.11+
+- Node.js 18+
+- MongoDB 6.0+
+- API Key de RapidAPI (API-Football)
 
-| Funcionalidad | Descripción |
-|--------------|-------------|
-| **Pronóstico Principal** | L (Local) / E (Empate) / V (Visitante) |
-| **Doble Oportunidad** | 1X / X2 / 12 |
-| **Ambos Marcan** | SI / NO |
-| **Over/Under 1.5** | 🆕 Predicción con probabilidad |
-| **Over/Under 2.5** | 🆕 Predicción con probabilidad |
-| **Over/Under 3.5** | 🆕 Predicción con probabilidad |
-| **Goles Esperados** | 🆕 Local, Visitante, Total |
-| **Forma Reciente** | 🆕 Últimos 5 partidos (V/E/D) |
-| **Tres Tiempos** | Completo, 1er Tiempo, 2do Tiempo |
+### Instalación Local
 
-### Sistema Multi-Liga
+1. **Clonar y configurar backend**
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-| Liga | ID API-Football | Soporte |
-|------|-----------------|--------|
-| La Liga (España) | 140 | ✅ Completo |
-| Premier League (Inglaterra) | 39 | ✅ Completo |
-| Serie A (Italia) | 135 | ✅ Disponible |
-| Bundesliga (Alemania) | 78 | ✅ Disponible |
-| Ligue 1 (Francia) | 61 | ✅ Disponible |
-| Liga MX (México) | 262 | ✅ Disponible |
+2. **Configurar variables de entorno**
+```bash
+# backend/.env
+MONGO_URL=mongodb://localhost:27017
+DB_NAME=test_database
+API_FOOTBALL_KEY=tu_api_key_de_rapidapi
+```
+
+3. **Importar datos de muestra**
+```bash
+cd data_export
+python import_data.py
+```
+
+4. **Iniciar backend**
+```bash
+cd backend
+uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+```
+
+5. **Configurar e iniciar frontend**
+```bash
+cd frontend
+yarn install
+
+# frontend/.env
+REACT_APP_BACKEND_URL=http://localhost:8001
+
+yarn start
+```
+
+---
+
+## 📖 Páginas de la Aplicación
+
+### 1. Dashboard
+Panel principal con estadísticas generales de la base de datos.
+
+### 2. Temporada Completa (NUEVO)
+Vista tipo Excel con todos los partidos de una temporada:
+- 380 partidos con pronósticos
+- Filtros avanzados (jornada, equipo, pronóstico, confianza)
+- Estadísticas de aciertos en tiempo real
+- Exportar a CSV
+
+### 3. Mejores Apuestas (NUEVO)
+Dashboard con las mejores oportunidades:
+- Doble Oportunidad
+- Favorito Claro
+- Over 2.5 / Over 1.5
+- Ambos Marcan
+- Ordenadas por probabilidad
+
+### 4. Por Jornada (NUEVO)
+Pronósticos de todos los partidos de una jornada:
+- 10 partidos por jornada
+- Defensa local/visitante
+- Exportar a CSV
+
+### 5. Por Partido
+Análisis detallado de un partido específico:
+- Forma reciente
+- H2H (enfrentamientos directos)
+- Pronósticos TC/1MT/2MT
+- Over/Under
+- Goles esperados
+
+### 6. Clasificación
+Tabla de posiciones calculada dinámicamente.
+
+### 7. Equipos
+Estadísticas detalladas por equipo:
+- General, Local, Visitante
+- Ataque y Defensa
+- Rendimiento por tiempo
+
+### 8. Extracción
+Interfaz para extraer datos de la API:
+- Seleccionar liga y temporada
+- Construcción automática de estadísticas
 
 ---
 
 ## 🔌 API Endpoints Principales
 
-### Pronósticos
-
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| POST | `/api/prediction/generate` | Genera pronóstico completo |
-| POST | `/api/prediction/build-stats` | Construye estadísticas |
-| GET | `/api/prediction/teams?season_id=X` | Lista equipos |
-| GET | `/api/prediction/classification?season_id=X` | Tabla de posiciones |
+| GET | `/api/leagues` | Ligas disponibles |
+| GET | `/api/seasons` | Temporadas disponibles |
+| POST | `/api/prediction/generate` | Generar pronóstico |
+| GET | `/api/prediction/jornada` | Pronósticos por jornada |
+| GET | `/api/prediction/temporada-completa` | Temporada completa |
+| GET | `/api/prediction/mejores-apuestas` | Mejores apuestas |
+| GET | `/api/prediction/h2h` | Historial H2H |
+| GET | `/api/prediction/backtesting` | Validación histórica |
+| GET | `/api/prediction/teams` | Equipos con stats |
+| GET | `/api/prediction/classification` | Clasificación |
+| POST | `/api/prediction/build-stats` | Construir estadísticas |
+| POST | `/api/scrape/start` | Iniciar extracción |
 
-### Datos
+Ver [API_REFERENCE.md](docs/API_REFERENCE.md) para documentación completa.
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/leagues` | Lista de ligas |
-| GET | `/api/seasons` | Lista de temporadas |
-| GET | `/api/stats?season_id=X` | Estadísticas generales |
-| POST | `/api/export` | Exportar datos CSV/JSON |
+---
 
-### Ejemplo: Generar Pronóstico
+## 📊 Modelo de Datos
 
-```bash
-curl -X POST "http://localhost:8001/api/prediction/generate" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "equipo_local": "Manchester City",
-    "equipo_visitante": "Arsenal",
-    "liga_id": "ENGLAND_PREMIER_LEAGUE",
-    "season_id": "ENGLAND_PREMIER_LEAGUE_2022-23"
-  }'
+### Colección: `football_matches`
+```javascript
+{
+  "match_id": "12345",
+  "season_id": "SPAIN_LA_LIGA_2023-24",
+  "liga_id": "SPAIN_LA_LIGA",
+  "equipo_local": "Real Madrid",
+  "equipo_visitante": "Barcelona",
+  "goles_local_TR": 2,
+  "goles_visitante_TR": 1,
+  "goles_local_1MT": 1,
+  "goles_visitante_1MT": 0,
+  "ronda": "Regular Season - 10",
+  "fecha": "2023-10-28",
+  "estado_del_partido": "Match Finished"
+}
 ```
 
-**Respuesta:**
-```json
+### Colección: `team_statistics`
+```javascript
 {
-  "success": true,
-  "pronostico": {
-    "equipo_local": "Manchester City",
-    "equipo_visitante": "Arsenal",
-    "season_id": "ENGLAND_PREMIER_LEAGUE_2022-23",
-    "tiempo_completo": {
-      "pronostico": "L",
-      "doble_oportunidad": "1X",
-      "ambos_marcan": "SI",
-      "probabilidades": {"local": 48.5, "empate": 26.3, "visita": 25.2},
-      "over_under": {
-        "over_15": {"prediccion": "OVER", "probabilidad": 92.1},
-        "over_25": {"prediccion": "OVER", "probabilidad": 80.3},
-        "over_35": {"prediccion": "OVER", "probabilidad": 62.5}
-      },
-      "goles_esperados": {"local": 2.1, "visitante": 1.5, "total": 3.6}
-    },
-    "forma_reciente": {
-      "local": {"ultimos_5": ["V","V","V","V","E"], "rendimiento": 86.67},
-      "visitante": {"ultimos_5": ["V","V","V","V","V"], "rendimiento": 100.0}
-    }
+  "nombre": "Real Madrid",
+  "liga_id": "SPAIN_LA_LIGA",
+  "season_id": "SPAIN_LA_LIGA_2023-24",
+  "stats_completo": {
+    "partidos_jugados": 38,
+    "victorias": 29,
+    "empates": 8,
+    "derrotas": 1,
+    "goles_favor": 87,
+    "goles_contra": 26,
+    "puntos": 95,
+    "rendimiento_general": 83.33,
+    "promedio_gf": 2.29,
+    "promedio_gc": 0.68
+  },
+  "forma_reciente": {
+    "ultimos_5": ["V", "V", "V", "V", "V"],
+    "rendimiento": 100
   }
 }
 ```
 
 ---
 
-## ⚙️ Configuración del Algoritmo
+## 🔧 Configuración del Motor
 
-### Umbrales Principales (config.py)
+El motor de pronósticos usa umbrales configurables en `prediction_engine/config.py`:
 
-| Parámetro | Valor | Descripción |
-|-----------|-------|-------------|
-| `PROB_LOCAL_MIN` | 43% | Mínimo para pronosticar LOCAL |
-| `PROB_LOCAL_MAX` | 69.5% | Máximo antes de "muy favorito" |
-| `PROB_EMPATE_MAX` | 20% | Máximo de empate para decidir |
-| `UMBRAL_AMBOS_MARCAN` | 45% | Umbral para SI/NO |
-| `PESO_FORMA_RECIENTE` | 30% | 🆕 Peso de forma vs temporada |
-| `PARTIDOS_FORMA_RECIENTE` | 5 | 🆕 Últimos N partidos |
-
----
-
-## 📊 Datos Disponibles
-
-El proyecto incluye datos pre-exportados en `/data_export/`:
-
-| Liga | Temporada | Partidos | Equipos |
-|------|-----------|----------|--------|
-| La Liga (España) | 2023-24 | 380 | 20 |
-| Premier League (Inglaterra) | 2022-23 | 380 | 20 |
-| **Total** | | **760** | **40** |
-
-Para importar estos datos en tu MongoDB local:
-```bash
-cd backend
-python import_data.py
+```python
+class Umbrales:
+    # Umbrales de confianza
+    CONFIANZA_ALTA = 70.0
+    CONFIANZA_MEDIA = 50.0
+    
+    # Pesos del algoritmo
+    PESO_RENDIMIENTO = 0.35
+    PESO_GOLES = 0.25
+    PESO_FORMA = 0.20
+    PESO_LOCAL = 0.15
+    PESO_H2H = 0.05
+    
+    # Pesos históricos
+    PESO_TEMPORADA_ACTUAL = 0.70
+    PESO_HISTORICO = 0.30
 ```
 
 ---
 
-## 🛠️ Solución de Problemas
+## 📈 Roadmap
 
-### "No hay equipos disponibles"
-1. Verifica que MongoDB esté corriendo
-2. Importa los datos: `python import_data.py`
-3. O extrae datos nuevos desde la página de Extracción
+### Completado ✅
+- [x] Motor de pronósticos PLLA 3.0
+- [x] Multi-liga y multi-temporada
+- [x] Forma reciente
+- [x] Over/Under y Ambos Marcan
+- [x] Vista de Temporada Completa
+- [x] Dashboard Mejores Apuestas
+- [x] Histórico Consolidado (H2H)
+- [x] Backtesting
+- [x] Estadísticas defensivas
+- [x] Generación automática de stats
 
-### "Error de conexión al backend"
-1. Verifica que el backend esté corriendo en puerto 8001
-2. Revisa `REACT_APP_BACKEND_URL` en `frontend/.env`
-
-### "API-Football: Account suspended"
-1. Verifica tu API key en https://dashboard.api-football.com
-2. El plan gratuito tiene límite de 100 llamadas/día
-
----
-
-## 📚 Documentación Adicional
-
-- **[Motor de Pronósticos](/docs/MOTOR_PRONOSTICOS.md)** - Algoritmo detallado
-- **[Referencia API](/docs/API_REFERENCE.md)** - Todos los endpoints
-- **[Análisis Season ID](/docs/ANALISIS_SEASON_ID.md)** - Sistema de temporadas
+### Próximas Mejoras 🔜
+- [ ] Partidos futuros (fixtures)
+- [ ] Predicción de marcador exacto
+- [ ] Dashboard de precisión histórica
+- [ ] Notificaciones de apuestas recomendadas
+- [ ] Integración con casas de apuestas (cuotas)
 
 ---
 
-## 📝 Changelog
+## 📝 Licencia
 
-### v3.1.0 (Diciembre 2024)
-- Sistema multi-liga completo
-- Over/Under goles con Poisson
-- Goles esperados
-- Forma reciente (últimos 5)
-- Ajuste de probabilidades por forma
-- Exportación de datos para uso local
-- Corrección de bugs en endpoints
-
-### v3.0.1 (Diciembre 2024)
-- Implementación de `season_id`
-- Selector de temporada
-- Documentación mejorada
-
-### v3.0.0 (Diciembre 2024)
-- Versión inicial del Motor PLLA 3.0
-- Sistema de pronósticos completo
-- Integración con API-Football
+Proyecto privado - Todos los derechos reservados.
 
 ---
 
-## 📄 Licencia
+## 📞 Soporte
 
-Proyecto privado - PLLA 3.0
-
----
-
-*Documentación actualizada: Diciembre 2024*
+Para consultas técnicas, revisar la documentación en `/docs/` o contactar al equipo de desarrollo.
