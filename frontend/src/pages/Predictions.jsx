@@ -460,6 +460,62 @@ const Predictions = () => {
           </div>
         )}
 
+        {/* H2H - Historial de Enfrentamientos */}
+        {prediction?.h2h?.tiene_historial && (
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <History size={18} color="#8b5cf6" />
+              Historial de Enfrentamientos (H2H)
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '1rem', alignItems: 'center' }}>
+              {/* Local stats */}
+              <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px' }}>
+                <p style={{ fontSize: '2rem', fontWeight: '700', color: '#10b981' }}>
+                  {prediction.h2h.victorias_eq1}
+                </p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Victorias {localTeam}</p>
+                <p style={{ fontSize: '1.25rem', fontWeight: '600', color: '#10b981', marginTop: '0.5rem' }}>
+                  {prediction.h2h.porcentaje_eq1}%
+                </p>
+              </div>
+              
+              {/* Empates */}
+              <div style={{ textAlign: 'center', padding: '1rem' }}>
+                <p style={{ fontSize: '2rem', fontWeight: '700', color: '#f59e0b' }}>
+                  {prediction.h2h.empates}
+                </p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Empates</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                  de {prediction.h2h.total_partidos} partidos
+                </p>
+              </div>
+              
+              {/* Visitante stats */}
+              <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px' }}>
+                <p style={{ fontSize: '2rem', fontWeight: '700', color: '#ef4444' }}>
+                  {prediction.h2h.victorias_eq2}
+                </p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Victorias {awayTeam}</p>
+                <p style={{ fontSize: '1.25rem', fontWeight: '600', color: '#ef4444', marginTop: '0.5rem' }}>
+                  {prediction.h2h.porcentaje_eq2}%
+                </p>
+              </div>
+            </div>
+            
+            {/* Tendencia */}
+            <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '8px', textAlign: 'center' }}>
+              <p style={{ fontSize: '0.85rem', color: '#8b5cf6', fontWeight: '500' }}>
+                {prediction.h2h.tendencia?.descripcion || 'Sin tendencia clara'}
+              </p>
+              {prediction.h2h.promedio_goles_total > 0 && (
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                  Promedio de goles en H2H: {prediction.h2h.promedio_goles_total}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Results Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
           <TimeCard 
