@@ -49,6 +49,10 @@ prediction_engine = PredictionEngine(db)
 validation_engine = ValidationEngine(db)
 backtesting_engine = BacktestingEngine(db)
 
+# Importar histórico consolidado
+from prediction_engine import HistoricoConsolidado
+historico_engine = HistoricoConsolidado(db)
+
 # Global variable to track scraping status
 scraping_status = {
     "is_running": False,
