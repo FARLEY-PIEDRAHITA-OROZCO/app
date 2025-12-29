@@ -10,7 +10,7 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Target, TrendingUp, Users, AlertCircle, RefreshCw, Globe, Flame, Goal } from 'lucide-react';
+import { Target, TrendingUp, Users, AlertCircle, RefreshCw, Globe, Flame, Goal, History } from 'lucide-react';
 import LeagueSelector from '../components/LeagueSelector';
 import SeasonSelector from '../components/SeasonSelector';
 
