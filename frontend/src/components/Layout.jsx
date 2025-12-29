@@ -50,6 +50,11 @@ const Layout = () => {
             Pronósticos
           </div>
           
+          <NavLink to="/temporada" data-testid="nav-temporada" style={navLinkStyle}>
+            <Table size={20} />
+            <span>Temporada Completa</span>
+          </NavLink>
+          
           <NavLink to="/mejores-apuestas" data-testid="nav-mejores" style={navLinkStyle}>
             <Zap size={20} />
             <span>Mejores Apuestas</span>
