@@ -812,6 +812,119 @@ async def get_jornada_predictions(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/prediction/temporada-completa")
+async def get_temporada_completa(season_id: str):
+    """
+    Genera pronósticos para TODOS los partidos de una temporada.
+    Optimizado para cargar toda la temporada en una sola llamada.
+    
+    **Parámetros:**
+    - `season_id`: ID de temporada (requerido)
+    
+    **Retorna:**
+    - Lista completa de partidos con pronósticos
+    """
+    try:
+        parts = season_id.rsplit('_', 1)
+        if len(parts) != 2:
+            raise HTTPException(status_code=400, detail="season_id inválido")
+        
+        liga_id = parts[0]
+        
+        # Obtener TODOS los partidos de la temporada
+        partidos = await db.football_matches.find(
+            {"season_id": season_id},
+            {"_id": 0}
+        ).sort([("fecha", 1), ("ronda", 1)]).to_list(500)
+        
+        if not partidos:
+            raise HTTPException(status_code=404, detail="No se encontraron partidos")
+        
+        # Pre-cargar todas las estadísticas de equipos
+        equipos_stats = {}
+        equipos = await stats_builder.obtener_todos_equipos(liga_id, season_id=season_id)
+        for eq in equipos:
+            equipos_stats[eq.nombre] = eq
+        
+        resultados = []
+        
+        for partido in partidos:
+            try:
+                # Extraer número de jornada
+                jornada = partido.get("ronda", "")
+                jornada_num = int(jornada.replace("Regular Season - ", "")) if "Regular Season" in jornada else 0
+                
+                pronostico = await prediction_engine.generar_pronostico(
+                    equipo_local=partido["equipo_local"],
+                    equipo_visitante=partido["equipo_visitante"],
+                    liga_id=liga_id,
+                    season_id=season_id
+                )
+                
+                tc = pronostico.tiempo_completo
+                
+                # Stats de equipos
+                stats_local = equipos_stats.get(partido["equipo_local"])
+                stats_visita = equipos_stats.get(partido["equipo_visitante"])
+                
+                resultados.append({
+                    "jornada": jornada,
+                    "jornada_num": jornada_num,
+                    "fecha": partido.get("fecha"),
+                    "equipo_local": partido["equipo_local"],
+                    "equipo_visitante": partido["equipo_visitante"],
+                    "pronostico": tc.pronostico,
+                    "doble_oportunidad": tc.doble_oportunidad,
+                    "ambos_marcan": tc.ambos_marcan,
+                    "over_under": tc.over_under,
+                    "probabilidades": {
+                        "local": tc.probabilidades.porcentaje_local,
+                        "empate": tc.probabilidades.porcentaje_empate,
+                        "visita": tc.probabilidades.porcentaje_visita
+                    },
+                    "confianza": tc.confianza,
+                    "goles_esperados": tc.goles_esperados,
+                    "defensa_local": {
+                        "gc_total": stats_local.stats_completo.goles_contra if stats_local else 0,
+                        "promedio_gc": stats_local.stats_completo.promedio_gc if stats_local else 0
+                    },
+                    "defensa_visitante": {
+                        "gc_total": stats_visita.stats_completo.goles_contra if stats_visita else 0,
+                        "promedio_gc": stats_visita.stats_completo.promedio_gc if stats_visita else 0
+                    },
+                    "resultado_real": {
+                        "local": partido.get("goles_local_TR"),
+                        "visitante": partido.get("goles_visitante_TR")
+                    } if partido.get("estado_del_partido") == "Match Finished" else None
+                })
+            except Exception as e:
+                logging.warning(f"Error en partido {partido['equipo_local']} vs {partido['equipo_visitante']}: {e}")
+                resultados.append({
+                    "jornada": partido.get("ronda", ""),
+                    "jornada_num": 0,
+                    "equipo_local": partido["equipo_local"],
+                    "equipo_visitante": partido["equipo_visitante"],
+                    "error": str(e)
+                })
+        
+        # Ordenar por jornada
+        resultados.sort(key=lambda x: (x.get("jornada_num", 0), x.get("fecha", "")))
+        
+        return {
+            "success": True,
+            "season_id": season_id,
+            "liga_id": liga_id,
+            "total_partidos": len(resultados),
+            "partidos": resultados
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error generando temporada completa: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.get("/prediction/mejores-apuestas")
 async def get_mejores_apuestas(
     season_id: str,
