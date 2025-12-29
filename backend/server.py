@@ -816,6 +816,42 @@ async def get_jornada_predictions(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/prediction/h2h")
+async def get_h2h(
+    equipo1: str,
+    equipo2: str,
+    liga_id: Optional[str] = None,
+    limite: int = 10
+):
+    """
+    Obtiene el historial de enfrentamientos directos (Head to Head).
+    
+    **Parámetros:**
+    - `equipo1`: Nombre del primer equipo
+    - `equipo2`: Nombre del segundo equipo
+    - `liga_id`: Filtrar por liga (opcional)
+    - `limite`: Máximo de partidos a considerar (default: 10)
+    
+    **Retorna:**
+    - Estadísticas de enfrentamientos directos
+    - Tendencia histórica
+    """
+    try:
+        h2h = await historico_engine.obtener_h2h(
+            equipo1=equipo1,
+            equipo2=equipo2,
+            liga_id=liga_id,
+            limite=limite
+        )
+        return {
+            "success": True,
+            "h2h": h2h
+        }
+    except Exception as e:
+        logging.error(f"Error obteniendo H2H: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.get("/prediction/temporada-completa")
 async def get_temporada_completa(season_id: str):
     """
