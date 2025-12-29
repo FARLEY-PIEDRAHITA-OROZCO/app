@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { BarChart3, Database, Download, Target, Trophy, Users, Calendar, Zap } from 'lucide-react';
+import { BarChart3, Database, Download, Target, Trophy, Users, Calendar, Zap, Table } from 'lucide-react';
 
 const Layout = () => {
   const navLinkStyle = ({ isActive }) => ({
