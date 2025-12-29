@@ -210,8 +210,10 @@ const TemporadaCompleta = () => {
     ];
     
     const rows = partidosFiltrados.map(p => {
-      const [gL, gV] = (p.resultado_real || '-').split('-').map(Number);
-      const resReal = !isNaN(gL) && !isNaN(gV) ? (gL > gV ? 'L' : gL < gV ? 'V' : 'E') : '';
+      const gL = p.resultado_real?.local;
+      const gV = p.resultado_real?.visitante;
+      const tieneResultado = gL !== null && gL !== undefined && gV !== null && gV !== undefined;
+      const resReal = tieneResultado ? (gL > gV ? 'L' : gL < gV ? 'V' : 'E') : '';
       const acerto = resReal && p.pronostico === resReal ? 'SI' : resReal ? 'NO' : '';
       
       return [
@@ -227,7 +229,7 @@ const TemporadaCompleta = () => {
         `${p.confianza?.toFixed(1) || 0}%`,
         p.defensa_local?.promedio_gc?.toFixed(2) || '',
         p.defensa_visitante?.promedio_gc?.toFixed(2) || '',
-        p.resultado_real || '',
+        tieneResultado ? `${gL}-${gV}` : '',
         acerto
       ];
     });
