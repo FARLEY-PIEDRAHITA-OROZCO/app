@@ -18,10 +18,10 @@ import csv
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# MongoDB connection - Declarar variables globales sin conectar aún
+mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+client = None
+db = None
 
 # Importar el Motor de Pronósticos
 from prediction_engine import (
@@ -41,6 +41,27 @@ app = FastAPI(
     version="1.0.0"
 )
 api_router = APIRouter(prefix="/api")
+
+@app.on_event("startup")
+async def startup_db_client():
+    """Conectar a MongoDB al iniciar la aplicación."""
+    global client, db
+    try:
+        mongo_url_env = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+        db_name = os.environ.get('DB_NAME', 'test_database')
+        
+        logger.info(f"Conectando a MongoDB: {mongo_url_env}")
+        client = AsyncIOMotorClient(mongo_url_env, serverSelectionTimeoutMS=5000)
+        
+        # Verificar conexión
+        await client.admin.command('ping')
+        logger.info("✅ Conexión a MongoDB exitosa")
+        
+        db = client[db_name]
+    except Exception as e:
+        logger.error(f"❌ Error conectando a MongoDB: {e}")
+        # No fallar el inicio, pero advertir
+        logger.warning("El servidor iniciará sin conexión a MongoDB")
 
 # Inicializar motores de pronósticos
 stats_builder = StatsBuilder(db)
