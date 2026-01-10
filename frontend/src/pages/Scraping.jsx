@@ -48,6 +48,12 @@ const Scraping = () => {
   const [exporting, setExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState('');
 
+  // Estado para construcción de estadísticas
+  const [statsLigaId, setStatsLigaId] = useState('');
+  const [statsSeasonId, setStatsSeasonId] = useState('');
+  const [buildingStats, setBuildingStats] = useState(false);
+  const [statsMessage, setStatsMessage] = useState('');
+
   useEffect(() => {
     fetchStatus();
     const interval = setInterval(fetchStatus, 3000);
