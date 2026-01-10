@@ -430,6 +430,85 @@ const Scraping = () => {
             </p>
           )}
         </div>
+
+        {/* Card de Construcción de Estadísticas */}
+        <div className="card">
+          <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Calculator size={20} color="var(--accent)" />
+            Construir Estadísticas
+          </h3>
+          
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+            Procesa los partidos y calcula las estadísticas acumuladas por equipo (PJ, V, E, D, GF, GC, Pts) para los 3 tiempos (TC, 1MT, 2MT).
+          </p>
+
+          {/* Selector de Liga */}
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              <Globe size={14} style={{ marginRight: '0.25rem' }} />
+              Liga
+            </label>
+            <LeagueSelector 
+              value={statsLigaId}
+              onChange={handleStatsLigaChange}
+              showLabel={false}
+            />
+          </div>
+
+          {/* Selector de Temporada */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              <Calendar size={14} style={{ marginRight: '0.25rem' }} />
+              Temporada
+            </label>
+            <SeasonSelector 
+              ligaId={statsLigaId}
+              value={statsSeasonId}
+              onChange={setStatsSeasonId}
+              showLabel={false}
+            />
+          </div>
+
+          <button
+            onClick={handleBuildStats}
+            disabled={buildingStats || !statsSeasonId}
+            className="btn btn-primary"
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', opacity: (!statsSeasonId || buildingStats) ? 0.5 : 1 }}
+          >
+            {buildingStats ? (
+              <>
+                <RefreshCw size={18} className="spin" />
+                Procesando...
+              </>
+            ) : (
+              <>
+                <Calculator size={18} />
+                Construir Estadísticas
+              </>
+            )}
+          </button>
+
+          {statsMessage && (
+            <p style={{ 
+              marginTop: '1rem', 
+              padding: '0.75rem', 
+              background: statsMessage.startsWith('✅') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              borderRadius: '8px',
+              fontSize: '0.9rem',
+              textAlign: 'center'
+            }}>
+              {statsMessage}
+            </p>
+          )}
+
+          <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', display: 'flex', gap: '0.5rem' }}>
+            <CheckCircle size={18} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              <p style={{ margin: '0 0 0.5rem 0' }}><strong>Nota:</strong> La extracción de datos ahora construye estadísticas automáticamente.</p>
+              <p style={{ margin: 0 }}>Usa este botón solo si importaste datos manualmente o necesitas regenerar las estadísticas.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Logs del Sistema */}
