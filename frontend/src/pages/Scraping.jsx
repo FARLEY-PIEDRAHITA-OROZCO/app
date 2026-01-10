@@ -104,6 +104,40 @@ const Scraping = () => {
     setExportSeasonId(''); // Reset season when league changes
   };
 
+  const handleStatsLigaChange = (newLigaId) => {
+    setStatsLigaId(newLigaId);
+    setStatsSeasonId(''); // Reset season when league changes
+  };
+
+  const handleBuildStats = async () => {
+    if (!statsSeasonId) {
+      setStatsMessage('❌ Selecciona una liga y temporada');
+      return;
+    }
+
+    setBuildingStats(true);
+    setStatsMessage('');
+
+    try {
+      const response = await axios.post(`${API}/prediction/build-stats`, {
+        season_id: statsSeasonId
+      });
+
+      if (response.data.success) {
+        const equipos = response.data.equipos?.length || 0;
+        setStatsMessage(`✅ Estadísticas construidas para ${equipos} equipos en ${statsSeasonId}`);
+      } else {
+        setStatsMessage('❌ Error al construir estadísticas');
+      }
+    } catch (error) {
+      console.error('Error building stats:', error);
+      const errorMsg = error.response?.data?.detail || 'Error al construir estadísticas';
+      setStatsMessage(`❌ ${errorMsg}`);
+    } finally {
+      setBuildingStats(false);
+    }
+  };
+
   const handleExport = async () => {
     if (!exportSeasonId) {
       setExportMessage('❌ Selecciona una liga y temporada para exportar');
