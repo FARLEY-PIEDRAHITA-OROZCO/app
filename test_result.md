@@ -743,6 +743,6 @@ agent_communication:
       - ✅ Funciona con ambas temporadas: ENGLAND_PREMIER_LEAGUE_2022-23 y SPAIN_LA_LIGA_2023-24
       - ✅ Valores por defecto funcionan correctamente cuando no se proporcionan parámetros
       
-      **URL BASE UTILIZADA:** https://sportbet-genius.preview.emergentagent.com/api (variable REACT_APP_BACKEND_URL)
+      **URL BASE UTILIZADA:** https://debug-helper-63.preview.emergentagent.com/api (variable REACT_APP_BACKEND_URL)
       
       La eliminación de valores hardcodeados de liga_id está completamente implementada y funcional. Todos los endpoints del review request pasan las pruebas exitosamente.
