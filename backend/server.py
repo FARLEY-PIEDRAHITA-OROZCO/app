@@ -49,10 +49,18 @@ app = FastAPI(
 )
 api_router = APIRouter(prefix="/api")
 
+# Declarar motores como variables globales (se inicializarán en startup)
+stats_builder = None
+classification_engine = None
+prediction_engine = None
+validation_engine = None
+backtesting_engine = None
+historico_engine = None
+
 @app.on_event("startup")
 async def startup_db_client():
     """Conectar a MongoDB al iniciar la aplicación."""
-    global client, db
+    global client, db, stats_builder, classification_engine, prediction_engine, validation_engine, backtesting_engine, historico_engine
     try:
         mongo_url_env = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
         db_name = os.environ.get('DB_NAME', 'test_database')
@@ -65,21 +73,24 @@ async def startup_db_client():
         logger.info("✅ Conexión a MongoDB exitosa")
         
         db = client[db_name]
+        
+        # Inicializar motores DESPUÉS de conectar a la base de datos
+        stats_builder = StatsBuilder(db)
+        classification_engine = ClassificationEngine(db)
+        prediction_engine = PredictionEngine(db)
+        validation_engine = ValidationEngine(db)
+        backtesting_engine = BacktestingEngine(db)
+        
+        # Importar histórico consolidado
+        from prediction_engine import HistoricoConsolidado
+        historico_engine = HistoricoConsolidado(db)
+        
+        logger.info("✅ Motores de pronósticos inicializados correctamente")
+        
     except Exception as e:
         logger.error(f"❌ Error conectando a MongoDB: {e}")
         # No fallar el inicio, pero advertir
         logger.warning("El servidor iniciará sin conexión a MongoDB")
-
-# Inicializar motores de pronósticos
-stats_builder = StatsBuilder(db)
-classification_engine = ClassificationEngine(db)
-prediction_engine = PredictionEngine(db)
-validation_engine = ValidationEngine(db)
-backtesting_engine = BacktestingEngine(db)
-
-# Importar histórico consolidado
-from prediction_engine import HistoricoConsolidado
-historico_engine = HistoricoConsolidado(db)
 
 # Global variable to track scraping status
 scraping_status = {
