@@ -18,6 +18,13 @@ import csv
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Configurar logging PRIMERO
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # MongoDB connection - Declarar variables globales sin conectar aún
 mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 client = None
