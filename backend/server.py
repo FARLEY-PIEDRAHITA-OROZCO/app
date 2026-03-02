@@ -70,7 +70,7 @@ async def startup_db_client():
         
         # Verificar conexión
         await client.admin.command('ping')
-        logger.info("✅ Conexión a MongoDB exitosa")
+        logger.info("Conexión a MongoDB exitosa")
         
         db = client[db_name]
         
@@ -85,10 +85,10 @@ async def startup_db_client():
         from prediction_engine import HistoricoConsolidado
         historico_engine = HistoricoConsolidado(db)
         
-        logger.info("✅ Motores de pronósticos inicializados correctamente")
+        logger.info("Motores de pronósticos inicializados correctamente")
         
     except Exception as e:
-        logger.error(f"❌ Error conectando a MongoDB: {e}")
+        logger.error(f"Error conectando a MongoDB: {e}")
         # No fallar el inicio, pero advertir
         logger.warning("El servidor iniciará sin conexión a MongoDB")
 

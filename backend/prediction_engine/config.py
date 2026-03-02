@@ -40,6 +40,7 @@ class TipoTiempo(str, Enum):
     SEGUNDO_TIEMPO = "segundo_tiempo"
 
 
+
 class ResultadoEnum(str, Enum):
     """
     Posibles resultados de un partido.
