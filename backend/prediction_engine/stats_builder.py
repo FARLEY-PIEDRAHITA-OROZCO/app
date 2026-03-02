@@ -651,6 +651,7 @@ class StatsBuilder:
         # Construir query
         query = {
             "liga_id": liga_id,
+            "estado_del_partido": "Match Finished",
             "$or": [
                 {"equipo_local": nombre_equipo},
                 {"equipo_visitante": nombre_equipo}
