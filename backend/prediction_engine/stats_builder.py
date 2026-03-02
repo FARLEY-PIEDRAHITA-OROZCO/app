@@ -163,7 +163,7 @@ class StatsBuilder:
         self.equipos_cache = {}
         
         # Construir query con fallback para compatibilidad
-        query = {"liga_id": liga_id}
+        query = {"liga_id": liga_id, "estado_del_partido": "Match Finished"}
         
         if effective_season_id:
             # Query que busca por season_id O por season (datos legacy)
