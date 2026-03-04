@@ -442,6 +442,11 @@ const TemporadaCompleta = () => {
                       Jornada <SortIcon column="jornada_num" />
                     </th>
                   )}
+                  {visibleColumns.fecha && (
+                    <th onClick={() => handleSort('fecha')} style={{ ...thStyle, cursor: 'pointer' }}>
+                      Fecha <SortIcon column="fecha" />
+                    </th>
+                  )}
                   {visibleColumns.local && <th style={thStyle}>Local</th>}
                   {visibleColumns.visitante && <th style={thStyle}>Visitante</th>}
                   {visibleColumns.pronostico && (
@@ -470,6 +475,7 @@ const TemporadaCompleta = () => {
                   return (
                     <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)', background: idx % 2 === 0 ? 'transparent' : 'var(--bg-secondary)' }}>
                       {visibleColumns.jornada && <td style={tdStyle}>{p.jornada?.replace('Regular Season - ', 'J')}</td>}
+                      {visibleColumns.fecha && <td style={{ ...tdStyle, fontSize: '0.75rem' }}>{p.fecha || '-'}</td>}
                       {visibleColumns.local && <td style={{ ...tdStyle, fontWeight: '500' }}>{p.equipo_local}</td>}
                       {visibleColumns.visitante && <td style={{ ...tdStyle, fontWeight: '500' }}>{p.equipo_visitante}</td>}
                       {visibleColumns.pronostico && (
