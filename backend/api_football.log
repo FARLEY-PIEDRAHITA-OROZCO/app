@@ -9560,3 +9560,143 @@ Top 5 ligas con más partidos:
 2026-03-02 00:13:44,609 - __main__ - INFO - ================================================================================
 
 2026-03-02 00:13:44,609 - api_football.db_manager - INFO - Conexión a MongoDB cerrada
+2026-03-03 17:48:14,861 - __main__ - INFO - 
+================================================================================
+2026-03-03 17:48:14,861 - __main__ - INFO - INICIO DE PROCESO - EXTRACCIÓN DE DATOS API-FUTBOL
+2026-03-03 17:48:14,861 - __main__ - INFO - ================================================================================
+
+2026-03-03 17:48:14,861 - __main__ - INFO - Inicializando cliente API...
+2026-03-03 17:48:14,861 - api_football.api_client - INFO - Cliente API-Futbol inicializado correctamente
+2026-03-03 17:48:14,861 - __main__ - INFO - Conectando a MongoDB...
+2026-03-03 17:48:14,861 - api_football.db_manager - INFO - DatabaseManager inicializado para BD: test_database
+2026-03-03 17:48:14,892 - api_football.db_manager - INFO - Conexión exitosa a MongoDB: test_database.football_matches
+2026-03-03 17:48:14,911 - api_football.db_manager - WARNING - Error creando índices: Index already exists with a different name: season_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: season_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}
+2026-03-03 17:48:14,912 - __main__ - INFO - Modo específico: procesando solo liga ID 140
+2026-03-03 17:48:14,912 - api_football.api_client - INFO - Obteniendo todas las ligas...
+2026-03-03 17:48:17,130 - api_football.api_client - INFO - Se encontraron 1219 ligas
+2026-03-03 17:48:17,131 - __main__ - INFO - Limitando a 1 ligas para pruebas
+2026-03-03 17:48:17,131 - __main__ - INFO - 
+Total de ligas a procesar: 1
+
+2026-03-03 17:48:17,131 - __main__ - INFO - 
+Procesando liga 1/1
+2026-03-03 17:48:17,131 - __main__ - INFO - 
+============================================================
+2026-03-03 17:48:17,131 - __main__ - INFO - Procesando: Spain - La Liga (ID: 140)
+2026-03-03 17:48:17,132 - __main__ - INFO - ============================================================
+2026-03-03 17:48:17,132 - __main__ - INFO - Obteniendo clasificación de equipos...
+2026-03-03 17:48:17,132 - api_football.api_client - INFO - Obteniendo clasificación de la liga 140...
+2026-03-03 17:48:18,009 - api_football.api_client - INFO - Se obtuvieron posiciones de 20 equipos
+2026-03-03 17:48:18,010 - __main__ - INFO - Obteniendo partidos...
+2026-03-03 17:48:18,010 - api_football.api_client - INFO - Obteniendo partidos de la liga 140, temporada 2024...
+2026-03-03 17:48:19,183 - api_football.api_client - INFO - Se encontraron 380 partidos para la liga 140
+2026-03-03 17:48:19,183 - __main__ - INFO - Transformando datos...
+2026-03-03 17:48:19,215 - api_football.data_transformer - INFO - Transformados 380 de 380 fixtures
+2026-03-03 17:48:19,215 - __main__ - INFO - Guardando en base de datos...
+2026-03-03 17:48:19,483 - api_football.db_manager - INFO - Inserción completada - Insertados: 380, Actualizados: 0, Duplicados: 0, Errores: 0
+2026-03-03 17:48:19,531 - __main__ - INFO - 
+================================================================================
+2026-03-03 17:48:19,532 - __main__ - INFO - RESUMEN FINAL
+2026-03-03 17:48:19,532 - __main__ - INFO - ================================================================================
+2026-03-03 17:48:19,532 - __main__ - INFO - Ligas procesadas: 1
+2026-03-03 17:48:19,532 - __main__ - INFO - Total fixtures obtenidos: 380
+2026-03-03 17:48:19,532 - __main__ - INFO - Total insertados en BD: 380
+2026-03-03 17:48:19,532 - __main__ - INFO - Total duplicados: 0
+2026-03-03 17:48:19,532 - __main__ - INFO - Total errores: 0
+2026-03-03 17:48:19,532 - __main__ - INFO - 
+Estadísticas de la base de datos:
+2026-03-03 17:48:19,544 - __main__ - INFO - Total partidos en BD: 2116
+2026-03-03 17:48:19,544 - __main__ - INFO - Total ligas en BD: 5
+2026-03-03 17:48:19,544 - __main__ - INFO - 
+Top 5 ligas con más partidos:
+2026-03-03 17:48:19,544 - __main__ - INFO -   1. La Liga (SPAIN_LA_LIGA): 760 partidos
+2026-03-03 17:48:19,544 - __main__ - INFO -   2. Premier League (ENGLAND_PREMIER_LEAGUE): 380 partidos
+2026-03-03 17:48:19,544 - __main__ - INFO -   3. Liga MX (MEXICO_LIGA_MX): 340 partidos
+2026-03-03 17:48:19,544 - __main__ - INFO -   4. Eredivisie (NETHERLANDS_EREDIVISIE): 321 partidos
+2026-03-03 17:48:19,546 - __main__ - INFO -   5. Jupiler Pro League (BELGIUM_JUPILER_PRO_LEAGUE): 315 partidos
+2026-03-03 17:48:19,546 - __main__ - INFO - 
+================================================================================
+2026-03-03 17:48:19,546 - __main__ - INFO - PROCESO COMPLETADO EXITOSAMENTE
+2026-03-03 17:48:19,546 - __main__ - INFO - ================================================================================
+
+2026-03-03 17:48:19,549 - api_football.db_manager - INFO - Conexión a MongoDB cerrada
+2026-03-03 17:57:48,100 - __main__ - INFO - 
+================================================================================
+2026-03-03 17:57:48,100 - __main__ - INFO - INICIO DE PROCESO - EXTRACCIÓN DE DATOS API-FUTBOL
+2026-03-03 17:57:48,100 - __main__ - INFO - ================================================================================
+
+2026-03-03 17:57:48,100 - __main__ - INFO - Inicializando cliente API...
+2026-03-03 17:57:48,100 - api_football.api_client - INFO - Cliente API-Futbol inicializado correctamente
+2026-03-03 17:57:48,100 - __main__ - INFO - Conectando a MongoDB...
+2026-03-03 17:57:48,100 - api_football.db_manager - INFO - DatabaseManager inicializado para BD: test_database
+2026-03-03 17:57:48,133 - api_football.db_manager - INFO - Conexión exitosa a MongoDB: test_database.football_matches
+2026-03-03 17:57:48,136 - api_football.db_manager - WARNING - Error creando índices: Index already exists with a different name: season_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: season_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}
+2026-03-03 17:57:48,136 - __main__ - INFO - Modo específico: procesando solo liga ID 78
+2026-03-03 17:57:48,136 - api_football.api_client - INFO - Obteniendo todas las ligas...
+2026-03-03 17:57:49,681 - api_football.api_client - INFO - Se encontraron 1219 ligas
+2026-03-03 17:57:49,682 - __main__ - INFO - Limitando a 1 ligas para pruebas
+2026-03-03 17:57:49,682 - __main__ - INFO - 
+Total de ligas a procesar: 1
+
+2026-03-03 17:57:49,682 - __main__ - INFO - 
+Procesando liga 1/1
+2026-03-03 17:57:49,682 - __main__ - INFO - 
+============================================================
+2026-03-03 17:57:49,682 - __main__ - INFO - Procesando: Germany - Bundesliga (ID: 78)
+2026-03-03 17:57:49,682 - __main__ - INFO - ============================================================
+2026-03-03 17:57:49,683 - __main__ - INFO - Obteniendo clasificación de equipos...
+2026-03-03 17:57:49,683 - api_football.api_client - INFO - Obteniendo clasificación de la liga 78...
+2026-03-03 17:57:50,465 - api_football.api_client - INFO - Se obtuvieron posiciones de 18 equipos
+2026-03-03 17:57:50,465 - __main__ - INFO - Obteniendo partidos...
+2026-03-03 17:57:50,465 - api_football.api_client - INFO - Obteniendo partidos de la liga 78, temporada 2024...
+2026-03-03 17:57:51,647 - api_football.api_client - INFO - Se encontraron 308 partidos para la liga 78
+2026-03-03 17:57:51,647 - __main__ - INFO - Transformando datos...
+2026-03-03 17:57:51,676 - api_football.data_transformer - INFO - Transformados 308 de 308 fixtures
+2026-03-03 17:57:51,676 - __main__ - INFO - Guardando en base de datos...
+2026-03-03 17:57:51,843 - api_football.db_manager - INFO - Inserción completada - Insertados: 308, Actualizados: 0, Duplicados: 0, Errores: 0
+2026-03-03 17:57:51,847 - __main__ - INFO - 
+================================================================================
+2026-03-03 17:57:51,847 - __main__ - INFO - RESUMEN FINAL
+2026-03-03 17:57:51,848 - __main__ - INFO - ================================================================================
+2026-03-03 17:57:51,848 - __main__ - INFO - Ligas procesadas: 1
+2026-03-03 17:57:51,848 - __main__ - INFO - Total fixtures obtenidos: 308
+2026-03-03 17:57:51,848 - __main__ - INFO - Total insertados en BD: 308
+2026-03-03 17:57:51,848 - __main__ - INFO - Total duplicados: 0
+2026-03-03 17:57:51,848 - __main__ - INFO - Total errores: 0
+2026-03-03 17:57:51,848 - __main__ - INFO - 
+Estadísticas de la base de datos:
+2026-03-03 17:57:51,859 - __main__ - INFO - Total partidos en BD: 2424
+2026-03-03 17:57:51,859 - __main__ - INFO - Total ligas en BD: 6
+2026-03-03 17:57:51,859 - __main__ - INFO - 
+Top 5 ligas con más partidos:
+2026-03-03 17:57:51,860 - __main__ - INFO -   1. La Liga (SPAIN_LA_LIGA): 760 partidos
+2026-03-03 17:57:51,860 - __main__ - INFO -   2. Premier League (ENGLAND_PREMIER_LEAGUE): 380 partidos
+2026-03-03 17:57:51,860 - __main__ - INFO -   3. Liga MX (MEXICO_LIGA_MX): 340 partidos
+2026-03-03 17:57:51,860 - __main__ - INFO -   4. Eredivisie (NETHERLANDS_EREDIVISIE): 321 partidos
+2026-03-03 17:57:51,860 - __main__ - INFO -   5. Jupiler Pro League (BELGIUM_JUPILER_PRO_LEAGUE): 315 partidos
+2026-03-03 17:57:51,860 - __main__ - INFO - 
+================================================================================
+2026-03-03 17:57:51,860 - __main__ - INFO - PROCESO COMPLETADO EXITOSAMENTE
+2026-03-03 17:57:51,860 - __main__ - INFO - ================================================================================
+
+2026-03-03 17:57:51,861 - api_football.db_manager - INFO - Conexión a MongoDB cerrada
+2026-03-03 20:06:56,431 - api_football.db_manager - INFO - DatabaseManager inicializado para BD: test_database
+2026-03-03 20:06:56,454 - api_football.db_manager - INFO - Conexión exitosa a MongoDB: test_database.football_matches
+2026-03-03 20:06:56,462 - api_football.db_manager - WARNING - Error creando índices: Index already exists with a different name: season_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: season_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}
+2026-03-03 20:06:56,494 - api_football.db_manager - INFO - Conexión a MongoDB cerrada
+2026-03-03 20:09:46,995 - api_football.db_manager - INFO - DatabaseManager inicializado para BD: test_database
+2026-03-03 20:09:47,013 - api_football.db_manager - INFO - Conexión exitosa a MongoDB: test_database.football_matches
+2026-03-03 20:09:47,020 - api_football.db_manager - WARNING - Error creando índices: Index already exists with a different name: season_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: season_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}
+2026-03-03 20:09:47,031 - api_football.db_manager - INFO - Conexión a MongoDB cerrada
+2026-03-03 22:17:10,297 - api_football.db_manager - INFO - DatabaseManager inicializado para BD: test_database
+2026-03-03 22:17:10,349 - api_football.db_manager - INFO - Conexión exitosa a MongoDB: test_database.football_matches
+2026-03-03 22:17:10,356 - api_football.db_manager - WARNING - Error creando índices: Index already exists with a different name: season_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: season_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}
+2026-03-03 22:17:10,357 - api_football.db_manager - INFO - Conexión a MongoDB cerrada
+2026-03-03 22:18:21,745 - api_football.db_manager - INFO - DatabaseManager inicializado para BD: test_database
+2026-03-03 22:18:21,778 - api_football.db_manager - INFO - Conexión exitosa a MongoDB: test_database.football_matches
+2026-03-03 22:18:21,785 - api_football.db_manager - WARNING - Error creando índices: Index already exists with a different name: season_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: season_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}
+2026-03-03 22:18:21,811 - api_football.db_manager - INFO - Conexión a MongoDB cerrada
+2026-03-03 22:18:46,354 - api_football.db_manager - INFO - DatabaseManager inicializado para BD: test_database
+2026-03-03 22:18:46,392 - api_football.db_manager - INFO - Conexión exitosa a MongoDB: test_database.football_matches
+2026-03-03 22:18:46,396 - api_football.db_manager - WARNING - Error creando índices: Index already exists with a different name: season_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: season_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}
+2026-03-03 22:18:46,407 - api_football.db_manager - INFO - Conexión a MongoDB cerrada
