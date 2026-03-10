@@ -300,9 +300,14 @@ class PredictionEngine:
         )
         
         # PASO 2: Calcular factores de ajuste
+        rend_local_ajustado = stats_local.rendimiento_local  
+        if factores_historicos:  
+            rend_local_ajustado *= factores_historicos.get("factor_local", 1.0)  
+            rend_local_ajustado = min(rend_local_ajustado, 100.0)  # cap al rango válido
+
         factor_local = self._calcular_factor_ajuste(stats_local.rendimiento_local)
         factor_visita = self._calcular_factor_ajuste(stats_visitante.rendimiento_visita)
-        
+
         # PASO 3: Ajustar por forma reciente si está disponible
         if forma_local and forma_visitante:
             probabilidades = self._ajustar_por_forma_reciente(
@@ -342,6 +347,9 @@ class PredictionEngine:
         confianza = self._calcular_confianza(
             probabilidades, pronostico, factor_local, factor_visita
         )
+
+        factor_local = max(1, min(5, int(round(factor_local))))  
+        factor_visita = max(1, min(5, int(round(factor_visita))))
         
         return PronosticoTiempo(
             pronostico=pronostico,
